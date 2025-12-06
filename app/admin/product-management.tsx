@@ -1,4 +1,4 @@
-// ProductManagement.tsx
+// ProductManagement.tsx (FIXED)
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -6,7 +6,6 @@ import {
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  SafeAreaView,
   Alert,
   FlatList,
   Image,
@@ -14,15 +13,15 @@ import {
   TextInput,
   ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProductContext } from './product-context';
-import { Product } from './productStore';
 
 const ProductManagement: React.FC = () => {
   const router = useRouter();
   const { products, deleteProduct, updateProduct } = useProductContext();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [editProductData, setEditProductData] = useState({
     name: '',
     description: '',
@@ -31,6 +30,7 @@ const ProductManagement: React.FC = () => {
     subCategory: '',
     quantity: '',
     image: '',
+    units: [] as string[],
   });
 
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -38,79 +38,156 @@ const ProductManagement: React.FC = () => {
 
   const categories: string[] = [
     'Fruits',
-    'Vegetables'
+    'Vegetables',
+    'Flowers'
   ];
 
   const subCategories: Record<string, string[]> = {
     'Fruits': [
-      'Apples',
-      'Bananas',
-      'Oranges',
-      'Grapes',
-      'Strawberries',
-      'Blueberries',
-      'Raspberries',
-      'Mangoes',
-      'Pineapples',
-      'Watermelons',
-      'Melons',
-      'Peaches',
-      'Plums',
-      'Cherries',
-      'Pears',
-      'Kiwis',
-      'Papayas',
-      'Guavas',
-      'Pomegranates',
-      'Lemons',
-      'Limes',
-      'Coconuts',
-      'Avocados',
-      'Figs',
-      'Dates',
-      'Lychees',
-      'Dragon Fruits',
-      'Star Fruits',
-      'Jackfruits',
-      'Passion Fruits'
+      'Apple',
+      'Apricot',
+      'Avocado',
+      'Banana',
+      'Blackberry',
+      'Blueberry',
+      'Cantaloupe',
+      'Cherry',
+      'Coconut',
+      'Cranberry',
+      'Date',
+      'Dragon Fruit',
+      'Durian',
+      'Fig',
+      'Gooseberry',
+      'Grape',
+      'Grapefruit',
+      'Guava',
+      'Honeydew',
+      'Jackfruit',
+      'Kiwi',
+      'Lemon',
+      'Lime',
+      'Lychee',
+      'Mango',
+      'Mangosteen',
+      'Melon',
+      'Mulberry',
+      'Nectarine',
+      'Orange',
+      'Papaya',
+      'Passion Fruit',
+      'Peach',
+      'Pear',
+      'Persimmon',
+      'Pineapple',
+      'Plum',
+      'Pomegranate',
+      'Pomelo',
+      'Rambutan',
+      'Raspberry',
+      'Red Currant',
+      'Starfruit',
+      'Strawberry',
+      'Tangerine',
+      'Watermelon'
     ],
     'Vegetables': [
-      'Potatoes',
-      'Tomatoes',
-      'Onions',
-      'Garlic',
-      'Carrots',
-      'Broccoli',
-      'Cauliflower',
-      'Spinach',
-      'Lettuce',
-      'Cabbage',
-      'Bell Peppers',
-      'Chili Peppers',
-      'Cucumbers',
-      'Zucchini',
-      'Eggplants',
-      'Pumpkins',
-      'Sweet Potatoes',
-      'Beets',
-      'Radishes',
-      'Turnips',
-      'Green Beans',
-      'Peas',
-      'Corn',
-      'Mushrooms',
-      'Ginger',
-      'Celery',
+      'Artichoke',
+      'Arugula',
       'Asparagus',
-      'Artichokes',
-      'Okra',
-      'Brussels Sprouts',
-      'Kale',
-      'Collard Greens',
+      'Beetroot',
+      'Bell Pepper',
       'Bok Choy',
-      'Leeks',
-      'Shallots',
-      'Spring Onions'
+      'Broccoli',
+      'Brussels Sprouts',
+      'Cabbage',
+      'Capsicum',
+      'Carrot',
+      'Cauliflower',
+      'Celery',
+      'Chard',
+      'Chili Pepper',
+      'Collard Greens',
+      'Corn',
+      'Cucumber',
+      'Eggplant',
+      'Endive',
+      'Fennel',
+      'Garlic',
+      'Ginger',
+      'Green Beans',
+      'Green Onion',
+      'Kale',
+      'Kohlrabi',
+      'Leek',
+      'Lettuce',
+      'Mushroom',
+      'Mustard Greens',
+      'Okra',
+      'Onion',
+      'Parsnip',
+      'Peas',
+      'Potato',
+      'Pumpkin',
+      'Radish',
+      'Red Cabbage',
+      'Rhubarb',
+      'Rutabaga',
+      'Shallot',
+      'Spinach',
+      'Squash',
+      'Sweet Potato',
+      'Tomato',
+      'Turnip',
+      'Watercress',
+      'Yam',
+      'Zucchini'
+    ],
+    'Flowers': [
+      'Rose',
+      'Lily',
+      'Tulip',
+      'Sunflower',
+      'Orchid',
+      'Daisy',
+      'Marigold',
+      'Jasmine',
+      'Lavender',
+      'Hibiscus',
+      'Chrysanthemum',
+      'Carnation',
+      'Daffodil',
+      'Peony',
+      'Hydrangea',
+      'Gerbera',
+      'Iris',
+      'Lotus',
+      'Magnolia',
+      'Pansy',
+      'Petunia',
+      'Poppy',
+      'Snapdragon',
+      'Zinnia',
+      'Begonia',
+      'Bluebell',
+      'Buttercup',
+      'Camellia',
+      'Dahlia',
+      'Freesia',
+      'Gardenia',
+      'Gladiolus',
+      'Honeysuckle',
+      'Hyacinth',
+      'Lilac',
+      'Morning Glory',
+      'Narcissus',
+      'Oleander',
+      'Periwinkle',
+      'Primrose',
+      'Ranunculus',
+      'Sweet Pea',
+      'Violet',
+      'Wisteria'
     ]
   };
 
@@ -140,16 +217,33 @@ const ProductManagement: React.FC = () => {
     );
   };
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = (product: any) => {
     setSelectedProduct(product);
+    
+    // Fix: Ensure units is an array
+    let unitsArray: string[] = [];
+    if (product.units) {
+      if (Array.isArray(product.units)) {
+        unitsArray = product.units;
+      } else if (typeof product.units === 'string') {
+        // Try to parse string to array
+        try {
+          unitsArray = product.units.split(',').map((unit: string) => unit.trim());
+        } catch {
+          unitsArray = [product.units];
+        }
+      }
+    }
+    
     setEditProductData({
       name: product.name,
-      description: product.description,
+      description: product.description || '',
       price: product.price,
       category: product.category,
-      subCategory: product.subCategory,
-      quantity: product.quantity,
+      subCategory: product.subCategory || '',
+      quantity: product.quantity.toString(),
       image: product.image || '',
+      units: unitsArray,
     });
     setEditModalVisible(true);
   };
@@ -161,14 +255,19 @@ const ProductManagement: React.FC = () => {
     }
 
     if (selectedProduct) {
-      const result = updateProduct(selectedProduct.id, editProductData);
+      const result = updateProduct(selectedProduct.id, {
+        ...editProductData,
+        quantity: parseInt(editProductData.quantity) || 0,
+        price: editProductData.price,
+        units: editProductData.units
+      });
       
       if (result.success) {
         Alert.alert('Success', result.message);
         setEditModalVisible(false);
         setSelectedProduct(null);
       } else {
-        Alert.alert('Product Already Exists', result.message);
+        Alert.alert('Error', result.message);
       }
     }
   };
@@ -188,41 +287,54 @@ const ProductManagement: React.FC = () => {
     return subCategories[editProductData.category] || [];
   };
 
-  const renderProductItem = ({ item }: { item: Product }) => (
-    <View style={styles.productCard}>
-      <Image 
-        source={{ uri: item.image || 'https://via.placeholder.com/80/CCCCCC/FFFFFF?text=No+Image' }} 
-        style={styles.productImage}
-        defaultSource={{ uri: 'https://via.placeholder.com/80/CCCCCC/FFFFFF?text=No+Image' }}
-      />
-      <View style={styles.productInfo}>
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productPrice}>₹{item.price}</Text>
-        <Text style={styles.productCategory}>{item.category} • {item.subCategory}</Text>
-        <Text style={styles.productDescription} numberOfLines={2}>
-          {item.description || 'No description'}
-        </Text>
-        <Text style={styles.productQuantity}>Quantity: {item.quantity}</Text>
+  const renderProductItem = ({ item }: { item: any }) => {
+    // Fix: Ensure units is always an array for display
+    let displayUnits = 'N/A';
+    if (item.units) {
+      if (Array.isArray(item.units)) {
+        displayUnits = item.units.join(', ');
+      } else if (typeof item.units === 'string') {
+        displayUnits = item.units;
+      }
+    }
+    
+    return (
+      <View style={styles.productCard}>
+        <Image 
+          source={{ uri: item.image || 'https://via.placeholder.com/80/CCCCCC/FFFFFF?text=No+Image' }} 
+          style={styles.productImage}
+          defaultSource={{ uri: 'https://via.placeholder.com/80/CCCCCC/FFFFFF?text=No+Image' }}
+        />
+        <View style={styles.productInfo}>
+          <Text style={styles.productName}>{item.name}</Text>
+          <Text style={styles.productPrice}>₹{item.price}</Text>
+          <Text style={styles.productCategory}>{item.category} • {item.subCategory || 'N/A'}</Text>
+          <Text style={styles.productDescription} numberOfLines={2}>
+            {item.description || 'No description'}
+          </Text>
+          <Text style={styles.productQuantity}>Quantity: {item.quantity}</Text>
+          <Text style={styles.productUnits}>Units: {displayUnits}</Text>
+        </View>
+        <View style={styles.productActions}>
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => handleEditProduct(item)}
+          >
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={() => handleDeleteProduct(item.id, item.name)}
+          >
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.productActions}>
-        <TouchableOpacity 
-          style={styles.editButton}
-          onPress={() => handleEditProduct(item)}
-        >
-          <Text style={styles.editButtonText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.deleteButton}
-          onPress={() => handleDeleteProduct(item.id, item.name)}
-        >
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -352,6 +464,11 @@ const ProductManagement: React.FC = () => {
                 />
               </View>
 
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Units: {editProductData.units.join(', ')}</Text>
+                <Text style={styles.unitsHint}>Units cannot be edited. Delete and recreate if needed.</Text>
+              </View>
+
               <View style={styles.modalButtons}>
                 <TouchableOpacity 
                   style={styles.cancelButton} 
@@ -446,7 +563,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -527,6 +644,11 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   productQuantity: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginBottom: 2,
+  },
+  productUnits: {
     fontSize: 12,
     color: '#7f8c8d',
   },
@@ -649,6 +771,12 @@ const styles = StyleSheet.create({
     width: 120,
     height: 90,
     borderRadius: 8,
+  },
+  unitsHint: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   modalButtons: {
     flexDirection: 'row',

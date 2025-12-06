@@ -1,5 +1,6 @@
+// ProductDetail.tsx
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Image,
@@ -11,45 +12,53 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import cartStore from './cartStore';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  description: string;
-  category: string;
-  unit: string;
-}
+import { useProductContext } from './product-context';
 
 const ProductDetail: React.FC = () => {
   const params = useLocalSearchParams();
   const router = useRouter();
+  const { products } = useProductContext();
   
-  let product: Product;
-  try {
-    product = JSON.parse(params.product as string) as Product;
-  } catch (error) {
-    product = {
-      id: '1',
-      name: 'Product Not Found',
-      price: 0,
-      image: 'https://via.placeholder.com/150/FF6B6B/FFFFFF?text=Error',
-      description: 'Product information could not be loaded',
-      category: 'error',
-      unit: 'N/A'
-    };
-  }
-
+  const [product, setProduct] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
 
-  const handleAddToCart = () => {
-    cartStore.addToCart(product, quantity);
+  useEffect(() => {
+    // Get product from context using ID
+    const productId = params.id as string;
+    if (productId && products.length > 0) {
+      const foundProduct = products.find(p => p.id === productId);
+      if (foundProduct) {
+        setProduct(foundProduct);
+      } else {
+        // If product not found, show error
+        setProduct({
+          id: '1',
+          name: 'Product Not Found',
+          price: '0',
+          image: 'https://via.placeholder.com/150/FF6B6B/FFFFFF?text=Error',
+          description: 'Product information could not be loaded',
+          category: 'error',
+          units: ['N/A']
+        });
+      }
+    }
+  }, [params.id, products]);
 
+  if (!product) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading product...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const handleAddToCart = () => {
+    // You can integrate with your cartStore here
     Alert.alert(
       'Added to Cart',
-      `${quantity} ${product.unit} of ${product.name} added to cart!`,
+      `${quantity} ${product.units?.[0] || 'item'} of ${product.name} added to cart!`,
       [
         { 
           text: 'Continue Shopping', 
@@ -66,25 +75,62 @@ const ProductDetail: React.FC = () => {
   const increaseQuantity = () => setQuantity(prev => prev + 1);
   const decreaseQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1);
 
+  const price = parseFloat(product.price) || 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Image source={{ uri: product.image }} style={styles.productImage} />
+        <Image 
+          source={{ uri: product.image || 'https://via.placeholder.com/300/CCCCCC/FFFFFF?text=No+Image' }} 
+          style={styles.productImage} 
+          defaultSource={{ uri: 'https://via.placeholder.com/300/CCCCCC/FFFFFF?text=Loading...' }}
+        />
         
         <View style={styles.productInfo}>
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryText}>
-              {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+              {product.category?.charAt(0).toUpperCase() + product.category?.slice(1) || 'Unknown'}
             </Text>
           </View>
           
           <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.productPrice}>₹{product.price.toFixed(2)}</Text>
-          <Text style={styles.productUnit}>{product.unit}</Text>
+          <Text style={styles.productPrice}>₹{price.toFixed(2)}</Text>
+          <Text style={styles.productUnit}>
+            {product.units && product.units.length > 0 ? product.units.join(', ') : 'N/A'}
+          </Text>
           
           <Text style={styles.descriptionTitle}>Description</Text>
-          <Text style={styles.productDescription}>{product.description}</Text>
+          <Text style={styles.productDescription}>
+            {product.description || 'No description available'}
+          </Text>
+          
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Category:</Text>
+              <Text style={styles.detailValue}>{product.category || 'N/A'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Sub Category:</Text>
+              <Text style={styles.detailValue}>{product.subCategory || 'N/A'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Available Quantity:</Text>
+              <Text style={styles.detailValue}>{product.quantity || 0}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Same Day Delivery:</Text>
+              <Text style={styles.detailValue}>
+                {product.sameDayAvailable ? 'Yes' : 'No'}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Next Day Delivery:</Text>
+              <Text style={styles.detailValue}>
+                {product.nextDayAvailable ? 'Yes' : 'No'}
+              </Text>
+            </View>
+          </View>
           
           <View style={styles.quantityContainer}>
             <Text style={styles.quantityLabel}>Quantity:</Text>
@@ -108,7 +154,7 @@ const ProductDetail: React.FC = () => {
           <View style={styles.totalContainer}>
             <Text style={styles.totalLabel}>Total:</Text>
             <Text style={styles.totalPrice}>
-              ₹{(product.price * quantity).toFixed(2)}
+              ₹{(price * quantity).toFixed(2)}
             </Text>
           </View>
           
@@ -125,6 +171,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#7f8c8d',
   },
   productImage: {
     width: '100%',
@@ -176,6 +231,37 @@ const styles = StyleSheet.create({
     color: '#5d6d7e',
     lineHeight: 24,
     marginBottom: 30,
+  },
+  detailsContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#2c3e50',
+    fontWeight: '600',
   },
   quantityContainer: {
     flexDirection: 'row',

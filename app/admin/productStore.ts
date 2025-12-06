@@ -11,6 +11,7 @@ export interface Product {
   subCategory: string;
   quantity: string;
   image: string | null;
+  units: string;
 }
 
 // Storage key
@@ -20,7 +21,7 @@ const PRODUCTS_STORAGE_KEY = 'products_data';
 let products: Product[] = [];
 
 // Listeners for state changes
-let listeners: (() => void)[] = [];
+let listeners: Array<() => void> = [];
 
 // Load products from storage
 export const loadProductsFromStorage = async (): Promise<void> => {
@@ -45,12 +46,12 @@ const saveProductsToStorage = async (): Promise<void> => {
 };
 
 // Notify all listeners when products change
-const notifyListeners = () => {
+const notifyListeners = (): void => {
   listeners.forEach(listener => listener());
 };
 
 // Subscribe to store changes
-export const subscribe = (listener: () => void) => {
+export const subscribe = (listener: () => void): (() => void) => {
   listeners.push(listener);
   return () => {
     listeners = listeners.filter(l => l !== listener);
@@ -170,7 +171,7 @@ export const searchProducts = (searchTerm: string): Product[] => {
 };
 
 // Clear all products function
-export const clearAllProducts = () => {
+export const clearAllProducts = (): void => {
   products = [];
   saveProductsToStorage();
   notifyListeners();
@@ -181,10 +182,44 @@ export const getProductsCount = (): number => {
   return products.length;
 };
 
-// Get categories list function
+// Get categories list function - FIXED VERSION
 export const getCategories = (): string[] => {
-  const categories = products.map(product => product.category);
-  return [...new Set(categories)];
+  const categories: Set<string> = new Set();
+  
+  products.forEach(product => {
+    if (product.category && product.category.trim() !== '') {
+      categories.add(product.category);
+    }
+  });
+  
+  return Array.from(categories);
+};
+
+// Get sub-categories for a category
+export const getSubCategories = (category: string): string[] => {
+  const subCategories: Set<string> = new Set();
+  
+  products.forEach(product => {
+    if (product.category === category && product.subCategory && product.subCategory.trim() !== '') {
+      subCategories.add(product.subCategory);
+    }
+  });
+  
+  return Array.from(subCategories);
+};
+
+// Get all units used in products
+export const getAllUnits = (): string[] => {
+  const allUnits: Set<string> = new Set();
+  
+  products.forEach(product => {
+    if (product.units && product.units.trim() !== '') {
+      const units = product.units.split(',').map(unit => unit.trim()).filter(unit => unit !== '');
+      units.forEach(unit => allUnits.add(unit));
+    }
+  });
+  
+  return Array.from(allUnits);
 };
 
 // Initialize products from storage on app start
@@ -204,6 +239,8 @@ const productStore = {
   getProductsCount,
   productExists,
   getCategories,
+  getSubCategories,
+  getAllUnits,
   subscribe,
   loadProductsFromStorage,
 };

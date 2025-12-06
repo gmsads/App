@@ -272,39 +272,33 @@ const AddShopkeeperScreen = () => {
 
       console.log('Sending request to API with body:', JSON.stringify(requestBody, null, 2));
 
-      // Make API call to register shopkeeper
-      const response = await fetch('http://localhost:8080/api/admin/registerShopKeeper', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${yourAuthToken}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      // Try to call API - if it fails, fall back to local storage
+      let apiSuccess = false;
+      try {
+        // Make API call to register shopkeeper
+        const response = await fetch('http://localhost:8080/api/admin/registerShopKeeper', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-      // Check if response is ok
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        let errorMessage = 'Registration failed';
-        
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // If response is not JSON, use the text
-          errorMessage = errorText || errorMessage;
+        // Check if response is ok
+        if (response.ok) {
+          // Parse successful response
+          const result = await response.json();
+          console.log('API Success Response:', result);
+          apiSuccess = true;
+          Alert.alert('Success', 'Shopkeeper registered with API successfully!');
+        } else {
+          console.warn('API call failed, falling back to local storage');
         }
-        
-        throw new Error(errorMessage);
+      } catch (apiError) {
+        console.warn('API Error, falling back to local storage:', apiError);
       }
 
-      // Parse successful response
-      const result = await response.json();
-      console.log('API Success Response:', result);
-      
-      // Also add to local context if needed (for offline/local state)
+      // Always save to local context (for offline/local state)
       const shopData = {
         name: formData.shopName,
         owner: `${formData.firstName} ${formData.lastName}`.trim(),
@@ -329,14 +323,15 @@ const AddShopkeeperScreen = () => {
       // Add shop to local context
       addShop(shopData);
       
-      // Show success message
-      Alert.alert('Success', 'Shopkeeper registered successfully!');
+      if (!apiSuccess) {
+        Alert.alert('Saved Locally', 'Shopkeeper registered locally! (API unavailable)');
+      }
       
       // Navigate back to previous screen
       router.back();
     } catch (error) {
       console.error('Error registering shopkeeper:', error);
-      Alert.alert('Registration Error', error.message || 'Failed to register shopkeeper. Please try again.');
+      Alert.alert('Registration Error', 'Failed to register shopkeeper. Please check your connection and try again.');
     } finally {
       // Reset loading state
       setIsLoading(false);
@@ -377,7 +372,7 @@ const AddShopkeeperScreen = () => {
 
   // Main component render
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       {/* Header Section */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel} style={styles.backButton} disabled={isLoading}>
@@ -708,7 +703,7 @@ const AddShopkeeperScreen = () => {
   );
 };
 
-// Styles for the component
+// Complete styles for the component
 const styles = StyleSheet.create({
   // Main container
   container: {

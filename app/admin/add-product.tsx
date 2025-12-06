@@ -16,128 +16,256 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useProductContext } from './product-context';
+import Checkbox from 'expo-checkbox';
 
+// Interface for form data
 interface ProductFormData {
   name: string;
   description: string;
-  price: string;
+  units: string[];
   category: string;
   subCategory: string;
-  quantity: string;
   image: string | null;
+  customUnit: string;
+  customCategory: string;
+  customSubCategory: string;
 }
 
 const AddProduct = () => {
+  // Get router for navigation
   const router = useRouter();
-  const { addProduct } = useProductContext();
+  
+  // Get context functions
+  const { addProduct, checkProductExists } = useProductContext();
 
+  // State for product form data
   const [productData, setProductData] = useState<ProductFormData>({
     name: '',
     description: '',
-    price: '',
+    units: [],
     category: '',
     subCategory: '',
-    quantity: '',
     image: null,
+    customUnit: '',
+    customCategory: '',
+    customSubCategory: '',
   });
 
+  // State for modal visibility
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [subCategoryModalVisible, setSubCategoryModalVisible] = useState(false);
+  const [unitsModalVisible, setUnitsModalVisible] = useState(false);
+  
+  // State for loading
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // State for showing custom inputs
+  const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
+  const [showCustomSubCategoryInput, setShowCustomSubCategoryInput] = useState(false);
+  const [showCustomUnitInput, setShowCustomUnitInput] = useState(false);
 
-  const categories: string[] = [
+  // State for search in modals
+  const [categorySearch, setCategorySearch] = useState('');
+  const [subCategorySearch, setSubCategorySearch] = useState('');
+  const [unitSearch, setUnitSearch] = useState('');
+
+  // Predefined categories
+  const predefinedCategories: string[] = [
     'Fruits',
-    'Vegetables'
+    'Vegetables',
+    'Flowers'
   ];
 
+  // Comprehensive sub-categories
   const subCategories: Record<string, string[]> = {
     'Fruits': [
-      'Apples',
-      'Bananas',
-      'Oranges',
-      'Grapes',
-      'Strawberries',
-      'Blueberries',
-      'Raspberries',
-      'Mangoes',
-      'Pineapples',
-      'Watermelons',
-      'Melons',
-      'Peaches',
-      'Plums',
-      'Cherries',
-      'Pears',
-      'Kiwis',
-      'Papayas',
-      'Guavas',
-      'Pomegranates',
-      'Lemons',
-      'Limes',
-      'Coconuts',
-      'Avocados',
-      'Figs',
-      'Dates',
-      'Lychees',
-      'Dragon Fruits',
-      'Star Fruits',
-      'Jackfruits',
-      'Passion Fruits'
+      'Apple',
+      'Apricot',
+      'Avocado',
+      'Banana',
+      'Blackberry',
+      'Blueberry',
+      'Cantaloupe',
+      'Cherry',
+      'Coconut',
+      'Cranberry',
+      'Date',
+      'Dragon Fruit',
+      'Durian',
+      'Fig',
+      'Gooseberry',
+      'Grape',
+      'Grapefruit',
+      'Guava',
+      'Honeydew',
+      'Jackfruit',
+      'Kiwi',
+      'Lemon',
+      'Lime',
+      'Lychee',
+      'Mango',
+      'Mangosteen',
+      'Melon',
+      'Mulberry',
+      'Nectarine',
+      'Orange',
+      'Papaya',
+      'Passion Fruit',
+      'Peach',
+      'Pear',
+      'Persimmon',
+      'Pineapple',
+      'Plum',
+      'Pomegranate',
+      'Pomelo',
+      'Rambutan',
+      'Raspberry',
+      'Red Currant',
+      'Starfruit',
+      'Strawberry',
+      'Tangerine',
+      'Watermelon'
     ],
     'Vegetables': [
-      'Potatoes',
-      'Tomatoes',
-      'Onions',
-      'Garlic',
-      'Carrots',
-      'Broccoli',
-      'Cauliflower',
-      'Spinach',
-      'Lettuce',
-      'Cabbage',
-      'Bell Peppers',
-      'Chili Peppers',
-      'Cucumbers',
-      'Zucchini',
-      'Eggplants',
-      'Pumpkins',
-      'Sweet Potatoes',
-      'Beets',
-      'Radishes',
-      'Turnips',
-      'Green Beans',
-      'Peas',
-      'Corn',
-      'Mushrooms',
-      'Ginger',
-      'Celery',
+      'Artichoke',
+      'Arugula',
       'Asparagus',
-      'Artichokes',
-      'Okra',
-      'Brussels Sprouts',
-      'Kale',
-      'Collard Greens',
+      'Beetroot',
+      'Bell Pepper',
       'Bok Choy',
-      'Leeks',
-      'Shallots',
-      'Spring Onions'
+      'Broccoli',
+      'Brussels Sprouts',
+      'Cabbage',
+      'Capsicum',
+      'Carrot',
+      'Cauliflower',
+      'Celery',
+      'Chard',
+      'Chili Pepper',
+      'Collard Greens',
+      'Corn',
+      'Cucumber',
+      'Eggplant',
+      'Endive',
+      'Fennel',
+      'Garlic',
+      'Ginger',
+      'Green Beans',
+      'Green Onion',
+      'Kale',
+      'Kohlrabi',
+      'Leek',
+      'Lettuce',
+      'Mushroom',
+      'Mustard Greens',
+      'Okra',
+      'Onion',
+      'Parsnip',
+      'Peas',
+      'Potato',
+      'Pumpkin',
+      'Radish',
+      'Red Cabbage',
+      'Rhubarb',
+      'Rutabaga',
+      'Shallot',
+      'Spinach',
+      'Squash',
+      'Sweet Potato',
+      'Tomato',
+      'Turnip',
+      'Watercress',
+      'Yam',
+      'Zucchini'
+    ],
+    'Flowers': [
+      'Rose',
+      'Lily',
+      'Tulip',
+      'Sunflower',
+      'Orchid',
+      'Daisy',
+      'Marigold',
+      'Jasmine',
+      'Lavender',
+      'Hibiscus',
+      'Chrysanthemum',
+      'Carnation',
+      'Daffodil',
+      'Peony',
+      'Hydrangea',
+      'Gerbera',
+      'Iris',
+      'Lotus',
+      'Magnolia',
+      'Pansy',
+      'Petunia',
+      'Poppy',
+      'Snapdragon',
+      'Zinnia',
+      'Begonia',
+      'Bluebell',
+      'Buttercup',
+      'Camellia',
+      'Dahlia',
+      'Freesia',
+      'Gardenia',
+      'Gladiolus',
+      'Honeysuckle',
+      'Hyacinth',
+      'Lilac',
+      'Morning Glory',
+      'Narcissus',
+      'Oleander',
+      'Periwinkle',
+      'Primrose',
+      'Ranunculus',
+      'Sweet Pea',
+      'Violet',
+      'Wisteria'
     ]
   };
 
+  // Predefined units
+  const predefinedUnits: string[] = [
+    'kg',
+    'kgs',
+    'gms',
+    'piece',
+    'pieces',
+    'bunch',
+    'bunches',
+    'pack',
+    'packs',
+    'liter',
+    'liters',
+    'ml',
+    'dozen',
+    'box',
+    'boxes',
+    'packet',
+    'packets'
+  ];
+
+  // Function to pick image from gallery
   const pickImage = async (): Promise<void> => {
     try {
+      // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Sorry, we need camera roll permissions to make this work!');
+        Alert.alert('Permission Required', 'Sorry, we need camera roll permissions to add images!');
         return;
       }
 
+      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
       });
 
+      // Set image if not canceled
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setProductData({ ...productData, image: result.assets[0].uri });
       }
@@ -147,6 +275,68 @@ const AddProduct = () => {
     }
   };
 
+  // Function to toggle unit selection
+  const handleUnitToggle = (unit: string): void => {
+    const updatedUnits = [...productData.units];
+    if (updatedUnits.includes(unit)) {
+      // Remove unit if already selected
+      const index = updatedUnits.indexOf(unit);
+      updatedUnits.splice(index, 1);
+    } else {
+      // Add unit if not selected
+      updatedUnits.push(unit);
+    }
+    setProductData({ ...productData, units: updatedUnits });
+  };
+
+  // Function to add custom unit
+  const handleAddCustomUnit = (): void => {
+    if (productData.customUnit.trim()) {
+      const customUnit = productData.customUnit.trim();
+      if (!productData.units.includes(customUnit)) {
+        const updatedUnits = [...productData.units, customUnit];
+        setProductData({ 
+          ...productData, 
+          units: updatedUnits,
+          customUnit: '' 
+        });
+        setShowCustomUnitInput(false);
+        setUnitSearch('');
+      }
+    }
+  };
+
+  // Function to add custom category
+  const handleAddCustomCategory = (): void => {
+    if (productData.customCategory.trim()) {
+      const customCategory = productData.customCategory.trim();
+      setProductData({ 
+        ...productData, 
+        category: customCategory,
+        customCategory: '',
+        subCategory: ''
+      });
+      setShowCustomCategoryInput(false);
+      setCategorySearch('');
+      setSubCategorySearch('');
+    }
+  };
+
+  // Function to add custom sub-category
+  const handleAddCustomSubCategory = (): void => {
+    if (productData.customSubCategory.trim()) {
+      const customSubCategory = productData.customSubCategory.trim();
+      setProductData({ 
+        ...productData, 
+        subCategory: customSubCategory,
+        customSubCategory: '' 
+      });
+      setShowCustomSubCategoryInput(false);
+      setSubCategorySearch('');
+    }
+  };
+
+  // Function to save product
   const handleSave = (): void => {
     // Prevent multiple submissions
     if (isSubmitting) return;
@@ -155,42 +345,38 @@ const AddProduct = () => {
 
     try {
       // Validate required fields
-      if (!productData.name || !productData.price || !productData.quantity || !productData.category) {
+      if (!productData.name || !productData.category || productData.units.length === 0) {
         Alert.alert('Error', 'Please fill in all required fields (*)');
         setIsSubmitting(false);
         return;
       }
 
-      // Validate price is a valid positive number
-      const price = parseFloat(productData.price);
-      if (isNaN(price) || price <= 0) {
-        Alert.alert('Error', 'Please enter a valid price (must be greater than 0)');
+      // Check if product exists
+      const existsCheck = checkProductExists(productData.name, productData.category);
+      if (existsCheck.exists) {
+        Alert.alert('Product Already Exists', existsCheck.message);
         setIsSubmitting(false);
         return;
       }
 
-      // Validate quantity is a valid positive integer
-      const quantity = parseInt(productData.quantity);
-      if (isNaN(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
-        Alert.alert('Error', 'Please enter a valid quantity (must be a whole number greater than 0)');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Trim and clean data
-      const cleanProductData = {
+      // Prepare product data
+      const productToSave = {
         name: productData.name.trim(),
         description: productData.description.trim(),
-        price: price.toString(),
-        category: productData.category.trim(),
-        subCategory: productData.subCategory.trim(),
-        quantity: quantity.toString(),
-        image: productData.image,
+        price: '0', // Default price
+        category: productData.category,
+        subCategory: productData.subCategory || '',
+        quantity: 0, // Default quantity
+        image: productData.image || '',
+        units: productData.units,
+        sameDayAvailable: true,
+        nextDayAvailable: true
       };
 
-      // Call addProduct which includes duplicate check
-      const result = addProduct(cleanProductData);
+      // Add product using context
+      const result = addProduct(productToSave);
 
+      // Handle result
       if (result.success) {
         Alert.alert(
           'Success',
@@ -207,7 +393,7 @@ const AddProduct = () => {
         );
       } else {
         Alert.alert(
-          'Product Already Exists',
+          'Error',
           result.message,
           [
             {
@@ -232,55 +418,80 @@ const AddProduct = () => {
     }
   };
 
+  // Function to select category
   const handleCategorySelect = (category: string): void => {
-    setProductData({ ...productData, category, subCategory: '' });
+    setProductData({ 
+      ...productData, 
+      category, 
+      subCategory: ''
+    });
     setCategoryModalVisible(false);
+    setCategorySearch('');
   };
 
+  // Function to select sub-category
   const handleSubCategorySelect = (subCategory: string): void => {
     setProductData({ ...productData, subCategory });
     setSubCategoryModalVisible(false);
+    setSubCategorySearch('');
   };
 
+  // Function to get filtered sub-categories
   const getCurrentSubCategories = (): string[] => {
     if (!productData.category) return [];
-    return subCategories[productData.category] || [];
-  };
-
-  // Format price input
-  const formatPriceInput = (text: string) => {
-    // Remove any non-numeric characters except decimal point
-    const cleaned = text.replace(/[^0-9.]/g, '');
+    const categories = subCategories[productData.category] || [];
     
-    // Ensure only one decimal point
-    const parts = cleaned.split('.');
-    if (parts.length > 2) {
-      return parts[0] + '.' + parts.slice(1).join('');
+    // Filter by search term
+    if (subCategorySearch.trim()) {
+      return categories.filter(item =>
+        item.toLowerCase().includes(subCategorySearch.toLowerCase())
+      );
     }
     
-    // Limit to 2 decimal places
-    if (parts[1] && parts[1].length > 2) {
-      return parts[0] + '.' + parts[1].slice(0, 2);
-    }
-    
-    return cleaned;
+    return categories;
   };
 
-  // Format quantity input (only whole numbers)
-  const formatQuantityInput = (text: string) => {
-    // Remove any non-numeric characters
-    const cleaned = text.replace(/[^0-9]/g, '');
-    
-    // Remove leading zeros
-    if (cleaned.length > 1 && cleaned.startsWith('0')) {
-      return cleaned.substring(1);
-    }
-    
-    return cleaned;
+  // Function to remove unit
+  const removeUnit = (unit: string): void => {
+    const updatedUnits = productData.units.filter(u => u !== unit);
+    setProductData({ ...productData, units: updatedUnits });
   };
 
+  // Function to filter categories
+  const getFilteredCategories = (): string[] => {
+    if (!categorySearch.trim()) return predefinedCategories;
+    
+    return predefinedCategories.filter(item =>
+      item.toLowerCase().includes(categorySearch.toLowerCase())
+    );
+  };
+
+  // Function to filter units
+  const getFilteredUnits = (): string[] => {
+    if (!unitSearch.trim()) return predefinedUnits;
+    
+    return predefinedUnits.filter(item =>
+      item.toLowerCase().includes(unitSearch.toLowerCase())
+    );
+  };
+
+  // Function to close all modals
+  const closeAllModals = (): void => {
+    setCategoryModalVisible(false);
+    setSubCategoryModalVisible(false);
+    setUnitsModalVisible(false);
+    setCategorySearch('');
+    setSubCategorySearch('');
+    setUnitSearch('');
+    setShowCustomCategoryInput(false);
+    setShowCustomSubCategoryInput(false);
+    setShowCustomUnitInput(false);
+  };
+
+  // Render component
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -289,25 +500,35 @@ const AddProduct = () => {
         <View style={styles.placeholder} />
       </View>
 
+      {/* Form */}
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+        {/* Image Upload */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Product Image</Text>
+          <Text style={styles.label}>Product Image (Optional)</Text>
           <TouchableOpacity style={styles.imageUpload} onPress={pickImage}>
             {productData.image ? (
-              <Image 
-                source={{ uri: productData.image }} 
-                style={styles.productImage} 
-                resizeMode="cover"
-              />
+              <View style={styles.imageContainer}>
+                <Image 
+                  source={{ uri: productData.image }} 
+                  style={styles.productImage} 
+                  resizeMode="cover"
+                />
+                <TouchableOpacity 
+                  style={styles.removeImageButton}
+                  onPress={() => setProductData({ ...productData, image: null })}
+                >
+                  <Text style={styles.removeImageText}>✕</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Text style={styles.imagePlaceholderText}>+ Add Image</Text>
-                <Text style={styles.imageHintText}>(Optional)</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
 
+        {/* Product Name */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Product Name *</Text>
           <TextInput
@@ -320,8 +541,9 @@ const AddProduct = () => {
           />
         </View>
 
+        {/* Description */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>Description (Optional)</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={productData.description}
@@ -335,26 +557,42 @@ const AddProduct = () => {
           />
         </View>
 
+        {/* Units */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Price (₹) *</Text>
-          <TextInput
-            style={styles.input}
-            value={productData.price}
-            onChangeText={(text) => {
-              const formatted = formatPriceInput(text);
-              setProductData({ ...productData, price: formatted });
-            }}
-            placeholder="0.00"
-            placeholderTextColor="#95a5a6"
-            keyboardType="decimal-pad"
-          />
-          {productData.price && (
-            <Text style={styles.validationHint}>
-              Price: ₹{parseFloat(productData.price || '0').toFixed(2)}
+          <Text style={styles.label}>Units *</Text>
+          <TouchableOpacity 
+            style={styles.input} 
+            onPress={() => setUnitsModalVisible(true)}
+          >
+            <Text style={productData.units.length > 0 ? styles.selectedText : styles.placeholderText}>
+              {productData.units.length > 0 
+                ? `Selected: ${productData.units.join(', ')}` 
+                : 'Select Units'}
             </Text>
+          </TouchableOpacity>
+          
+          {/* Selected Units Display */}
+          {productData.units.length > 0 && (
+            <View style={styles.selectedUnitsContainer}>
+              <Text style={styles.selectedUnitsLabel}>Selected Units:</Text>
+              <View style={styles.unitsChips}>
+                {productData.units.map((unit, index) => (
+                  <View key={index} style={styles.unitChip}>
+                    <Text style={styles.unitChipText}>{unit}</Text>
+                    <TouchableOpacity 
+                      onPress={() => removeUnit(unit)}
+                      style={styles.removeUnitButton}
+                    >
+                      <Text style={styles.removeUnitText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
           )}
         </View>
 
+        {/* Category */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Category *</Text>
           <TouchableOpacity 
@@ -367,8 +605,9 @@ const AddProduct = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Sub Category */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Sub Category</Text>
+          <Text style={styles.label}>Sub Category (Optional)</Text>
           <TouchableOpacity 
             style={[
               styles.input, 
@@ -388,26 +627,7 @@ const AddProduct = () => {
           )}
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Quantity *</Text>
-          <TextInput
-            style={styles.input}
-            value={productData.quantity}
-            onChangeText={(text) => {
-              const formatted = formatQuantityInput(text);
-              setProductData({ ...productData, quantity: formatted });
-            }}
-            placeholder="0"
-            placeholderTextColor="#95a5a6"
-            keyboardType="number-pad"
-          />
-          {productData.quantity && (
-            <Text style={styles.validationHint}>
-              Quantity: {productData.quantity} units
-            </Text>
-          )}
-        </View>
-
+        {/* Save Button */}
         <TouchableOpacity 
           style={[
             styles.saveButton,
@@ -421,6 +641,7 @@ const AddProduct = () => {
           </Text>
         </TouchableOpacity>
 
+        {/* Required Hint */}
         <View style={styles.requiredHint}>
           <Text style={styles.requiredHintText}>
             * Required fields
@@ -428,71 +649,282 @@ const AddProduct = () => {
         </View>
       </ScrollView>
 
+      {/* Units Modal */}
+      <Modal
+        visible={unitsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeAllModals}
+      >
+        <SafeAreaView style={styles.modalOuterContainer}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Units (Multiple)</Text>
+              
+              {/* Search Input */}
+              <View style={styles.modalSearchContainer}>
+                <TextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Search units..."
+                  placeholderTextColor="#95a5a6"
+                  value={unitSearch}
+                  onChangeText={setUnitSearch}
+                />
+              </View>
+              
+              {/* Units List */}
+              <FlatList
+                data={getFilteredUnits()}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <View style={styles.modalItemWithCheckbox}>
+                    <Checkbox
+                      value={productData.units.includes(item)}
+                      onValueChange={() => handleUnitToggle(item)}
+                      color={productData.units.includes(item) ? '#27ae60' : undefined}
+                    />
+                    <Text style={styles.modalItemText}>{item}</Text>
+                  </View>
+                )}
+                ListFooterComponent={() => (
+                  <View>
+                    {/* Custom Unit Input */}
+                    {showCustomUnitInput ? (
+                      <View style={styles.customInputContainer}>
+                        <TextInput
+                          style={styles.customInput}
+                          value={productData.customUnit}
+                          onChangeText={(text) => setProductData({ ...productData, customUnit: text })}
+                          placeholder="Enter custom unit"
+                          placeholderTextColor="#95a5a6"
+                          autoFocus
+                        />
+                        <View style={styles.customInputButtons}>
+                          <TouchableOpacity 
+                            style={styles.customInputButton}
+                            onPress={handleAddCustomUnit}
+                          >
+                            <Text style={styles.customInputButtonText}>Add</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.customInputButton, styles.customInputButtonCancel]}
+                            onPress={() => {
+                              setShowCustomUnitInput(false);
+                              setUnitSearch('');
+                            }}
+                          >
+                            <Text style={styles.customInputButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addCustomButton}
+                        onPress={() => setShowCustomUnitInput(true)}
+                      >
+                        <Text style={styles.addCustomButtonText}>+ Add Custom Unit</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              />
+              
+              {/* Done Button */}
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={closeAllModals}
+              >
+                <Text style={styles.modalCloseButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Category Modal */}
       <Modal
         visible={categoryModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setCategoryModalVisible(false)}
+        onRequestClose={closeAllModals}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Category</Text>
-            <FlatList
-              data={categories}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalItem}
-                  onPress={() => handleCategorySelect(item)}
-                >
-                  <Text style={styles.modalItemText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setCategoryModalVisible(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
+        <SafeAreaView style={styles.modalOuterContainer}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              
+              {/* Search Input */}
+              <View style={styles.modalSearchContainer}>
+                <TextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Search categories..."
+                  placeholderTextColor="#95a5a6"
+                  value={categorySearch}
+                  onChangeText={setCategorySearch}
+                />
+              </View>
+              
+              {/* Categories List */}
+              <FlatList
+                data={getFilteredCategories()}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => handleCategorySelect(item)}
+                  >
+                    <Text style={styles.modalItemText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+                ListFooterComponent={() => (
+                  <View>
+                    {/* Custom Category Input */}
+                    {showCustomCategoryInput ? (
+                      <View style={styles.customInputContainer}>
+                        <TextInput
+                          style={styles.customInput}
+                          value={productData.customCategory}
+                          onChangeText={(text) => setProductData({ ...productData, customCategory: text })}
+                          placeholder="Enter custom category"
+                          placeholderTextColor="#95a5a6"
+                          autoFocus
+                        />
+                        <View style={styles.customInputButtons}>
+                          <TouchableOpacity 
+                            style={styles.customInputButton}
+                            onPress={handleAddCustomCategory}
+                          >
+                            <Text style={styles.customInputButtonText}>Add</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.customInputButton, styles.customInputButtonCancel]}
+                            onPress={() => {
+                              setShowCustomCategoryInput(false);
+                              setCategorySearch('');
+                            }}
+                          >
+                            <Text style={styles.customInputButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addCustomButton}
+                        onPress={() => setShowCustomCategoryInput(true)}
+                      >
+                        <Text style={styles.addCustomButtonText}>+ Add Custom Category</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              />
+              
+              {/* Cancel Button */}
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={closeAllModals}
+              >
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
+      {/* Sub Category Modal */}
       <Modal
         visible={subCategoryModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setSubCategoryModalVisible(false)}
+        onRequestClose={closeAllModals}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Sub Category</Text>
-            <FlatList
-              data={getCurrentSubCategories()}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalItem}
-                  onPress={() => handleSubCategorySelect(item)}
-                >
-                  <Text style={styles.modalItemText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setSubCategoryModalVisible(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
+        <SafeAreaView style={styles.modalOuterContainer}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Sub Category</Text>
+              
+              {/* Search Input */}
+              <View style={styles.modalSearchContainer}>
+                <TextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Search sub-categories..."
+                  placeholderTextColor="#95a5a6"
+                  value={subCategorySearch}
+                  onChangeText={setSubCategorySearch}
+                />
+              </View>
+              
+              {/* Sub Categories List */}
+              <FlatList
+                data={getCurrentSubCategories()}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => handleSubCategorySelect(item)}
+                  >
+                    <Text style={styles.modalItemText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+                ListFooterComponent={() => (
+                  <View>
+                    {/* Custom Sub-Category Input */}
+                    {showCustomSubCategoryInput ? (
+                      <View style={styles.customInputContainer}>
+                        <TextInput
+                          style={styles.customInput}
+                          value={productData.customSubCategory}
+                          onChangeText={(text) => setProductData({ ...productData, customSubCategory: text })}
+                          placeholder="Enter custom sub-category"
+                          placeholderTextColor="#95a5a6"
+                          autoFocus
+                        />
+                        <View style={styles.customInputButtons}>
+                          <TouchableOpacity 
+                            style={styles.customInputButton}
+                            onPress={handleAddCustomSubCategory}
+                          >
+                            <Text style={styles.customInputButtonText}>Add</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.customInputButton, styles.customInputButtonCancel]}
+                            onPress={() => {
+                              setShowCustomSubCategoryInput(false);
+                              setSubCategorySearch('');
+                            }}
+                          >
+                            <Text style={styles.customInputButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addCustomButton}
+                        onPress={() => setShowCustomSubCategoryInput(true)}
+                      >
+                        <Text style={styles.addCustomButtonText}>+ Add Custom Sub-Category</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              />
+              
+              {/* Cancel Button */}
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={closeAllModals}
+              >
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -503,7 +935,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -566,10 +998,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  imageContainer: {
+    position: 'relative',
+  },
   productImage: {
     width: 200,
     height: 150,
     borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: '#e74c3c',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeImageText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   imagePlaceholder: {
     width: 200,
@@ -586,11 +1037,6 @@ const styles = StyleSheet.create({
     color: '#3498db',
     fontSize: 16,
     fontWeight: '500',
-  },
-  imageHintText: {
-    color: '#7f8c8d',
-    fontSize: 12,
-    marginTop: 4,
   },
   validationHint: {
     fontSize: 12,
@@ -624,17 +1070,54 @@ const styles = StyleSheet.create({
     color: '#7f8c8d',
     fontSize: 14,
   },
+  selectedUnitsContainer: {
+    marginTop: 10,
+  },
+  selectedUnitsLabel: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 8,
+  },
+  unitsChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  unitChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3498db',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  unitChipText: {
+    color: 'white',
+    fontSize: 14,
+    marginRight: 6,
+  },
+  removeUnitButton: {
+    padding: 2,
+  },
+  removeUnitText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  modalOuterContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
-    width: '80%',
+    width: '90%',
     maxHeight: '80%',
   },
   modalTitle: {
@@ -644,10 +1127,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#2c3e50',
   },
+  modalSearchContainer: {
+    marginBottom: 15,
+  },
+  modalSearchInput: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#2c3e50',
+  },
   modalItem: {
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#ecf0f1',
+  },
+  modalItemWithCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+    gap: 12,
   },
   modalItemText: {
     fontSize: 16,
@@ -657,11 +1161,57 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#3498db',
     borderRadius: 8,
   },
   modalCloseButtonText: {
     color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  customInputContainer: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+  },
+  customInput: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#3498db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#2c3e50',
+    marginBottom: 10,
+  },
+  customInputButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  customInputButton: {
+    flex: 1,
+    backgroundColor: '#27ae60',
+    padding: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  customInputButtonCancel: {
+    backgroundColor: '#e74c3c',
+  },
+  customInputButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addCustomButton: {
+    padding: 15,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+  },
+  addCustomButtonText: {
+    color: '#3498db',
     fontSize: 16,
     fontWeight: '600',
   },

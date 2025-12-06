@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Define User interface
+// Define User interface (removed totalSpent)
 interface User {
   id: string;
   firstName: string;
@@ -23,10 +23,9 @@ interface User {
   registrationDate: string;
   lastLogin: string;
   totalOrders: number;
-  totalSpent: number;
 }
 
-// Mock data for demonstration
+// Mock data for demonstration (removed totalSpent from all users)
 const mockUsers: User[] = [
   {
     id: 'USR001',
@@ -38,7 +37,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-01-15',
     lastLogin: '2024-03-15',
     totalOrders: 15,
-    totalSpent: 12500,
   },
   {
     id: 'USR002',
@@ -50,7 +48,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-01-20',
     lastLogin: '2024-03-14',
     totalOrders: 8,
-    totalSpent: 6800,
   },
   {
     id: 'USR003',
@@ -62,7 +59,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-02-01',
     lastLogin: '2024-02-28',
     totalOrders: 3,
-    totalSpent: 2500,
   },
   {
     id: 'USR004',
@@ -74,7 +70,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-02-10',
     lastLogin: '2024-03-15',
     totalOrders: 22,
-    totalSpent: 18400,
   },
   {
     id: 'USR005',
@@ -86,7 +81,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-02-15',
     lastLogin: '2024-03-01',
     totalOrders: 5,
-    totalSpent: 4200,
   },
   {
     id: 'USR006',
@@ -98,7 +92,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-02-20',
     lastLogin: '2024-03-15',
     totalOrders: 12,
-    totalSpent: 9600,
   },
   {
     id: 'USR007',
@@ -110,7 +103,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-03-01',
     lastLogin: '2024-03-14',
     totalOrders: 7,
-    totalSpent: 5400,
   },
   {
     id: 'USR008',
@@ -122,7 +114,6 @@ const mockUsers: User[] = [
     registrationDate: '2024-03-05',
     lastLogin: '2024-03-10',
     totalOrders: 2,
-    totalSpent: 1800,
   },
 ];
 
@@ -213,13 +204,10 @@ const UserManagement: React.FC = () => {
     });
   };
 
-  // Remove handleAddUser function since we're removing the "Add User" functionality
-
-  // Calculate statistics
+  // Calculate statistics (removed totalRevenue calculation)
   const totalUsers = users.length;
   const activeUsers = users.filter(user => user.status === 'Active').length;
   const inactiveUsers = users.filter(user => user.status === 'Inactive').length;
-  const totalRevenue = users.reduce((sum, user) => sum + user.totalSpent, 0);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -240,7 +228,6 @@ const UserManagement: React.FC = () => {
         
         <Text style={styles.headerTitle}>User Management</Text>
         
-        {/* Remove Add Button */}
         <View style={styles.headerPlaceholder} />
       </View>
 
@@ -277,12 +264,6 @@ const UserManagement: React.FC = () => {
           <View style={[styles.statCard, styles.inactiveCard]}>
             <Text style={styles.statNumber}>{inactiveUsers}</Text>
             <Text style={styles.statLabel}>Inactive Users</Text>
-          </View>
-          
-          {/* Revenue Card */}
-          <View style={[styles.statCard, styles.revenueCard]}>
-            <Text style={styles.statNumber}>₹{totalRevenue.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Total Revenue</Text>
           </View>
         </ScrollView>
 
@@ -344,7 +325,6 @@ const UserManagement: React.FC = () => {
                   ? 'Try adjusting your search or filters'
                   : 'No users have registered yet'}
               </Text>
-              {/* Remove Add New User button from empty state */}
             </View>
           ) : (
             <ScrollView 
@@ -369,9 +349,6 @@ const UserManagement: React.FC = () => {
                   </View>
                   <View style={[styles.tableHeaderCell, styles.columnOrders]}>
                     <Text style={styles.tableHeaderText}>Orders</Text>
-                  </View>
-                  <View style={[styles.tableHeaderCell, styles.columnSpent]}>
-                    <Text style={styles.tableHeaderText}>Total Spent</Text>
                   </View>
                   <View style={[styles.tableHeaderCell, styles.columnLastLogin]}>
                     <Text style={styles.tableHeaderText}>Last Login</Text>
@@ -420,13 +397,6 @@ const UserManagement: React.FC = () => {
                     {/* Total Orders */}
                     <View style={[styles.tableCell, styles.columnOrders]}>
                       <Text style={styles.cellText}>{user.totalOrders}</Text>
-                    </View>
-                    
-                    {/* Total Spent */}
-                    <View style={[styles.tableCell, styles.columnSpent]}>
-                      <Text style={[styles.cellText, styles.spentText]}>
-                        ₹{user.totalSpent.toLocaleString()}
-                      </Text>
                     </View>
                     
                     {/* Last Login */}
@@ -489,7 +459,7 @@ const UserManagement: React.FC = () => {
   );
 };
 
-// Updated Styles
+// Updated Styles (removed revenueCard style)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -528,12 +498,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   
-  // Add header placeholder to maintain layout
   headerPlaceholder: {
-    width: 70, // Same width as the removed add button
+    width: 70,
   },
-  
-  // Remove addButton and addButtonText styles
   
   content: {
     flex: 1,
@@ -582,11 +549,6 @@ const styles = StyleSheet.create({
   inactiveCard: {
     borderTopWidth: 4,
     borderTopColor: '#e74c3c',
-  },
-  
-  revenueCard: {
-    borderTopWidth: 4,
-    borderTopColor: '#9b59b6',
   },
   
   statNumber: {
@@ -675,7 +637,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     paddingVertical: 12,
-    minWidth: 1300,
+    minWidth: 1000, // Reduced from 1300
   },
   
   tableHeaderCell: {
@@ -692,12 +654,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   
+  // Column widths (removed columnSpent)
   columnUserId: { width: 80 },
   columnName: { width: 120 },
   columnEmail: { width: 180 },
   columnPhone: { width: 120 },
   columnOrders: { width: 80 },
-  columnSpent: { width: 100 },
   columnLastLogin: { width: 100 },
   columnStatus: { width: 100 },
   columnActions: { width: 280, borderRightWidth: 0 },
@@ -705,7 +667,7 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: 'row',
     minHeight: 60,
-    minWidth: 1300,
+    minWidth: 1000, // Reduced from 1300
   },
   
   tableRowEven: {
@@ -737,11 +699,6 @@ const styles = StyleSheet.create({
   
   emailText: {
     fontSize: 11,
-  },
-  
-  spentText: {
-    fontWeight: '600',
-    color: '#27ae60',
   },
   
   statusBadge: {
@@ -852,8 +809,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  
-  // Remove emptyStateButton and emptyStateButtonText styles
   
   bottomPadding: {
     height: 20,
