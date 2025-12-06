@@ -238,23 +238,50 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  // Handle skip login (only for customers)
+  // Handle skip login (for customer and shopkeeper)
   const handleSkipLogin = async () => {
-    const dummyData = {
-      phone: '9999999999',
-      userType: 'customer',
-      loginTime: new Date().toISOString(),
-      name: 'Guest User',
-      joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-      isGuest: true,
-    };
-    
     try {
-      await AsyncStorage.setItem('userData', JSON.stringify(dummyData));
-      router.replace('/productlist');
+      if (userType === 'customer') {
+        const dummyData = {
+          phone: '9999999999',
+          userType: 'customer',
+          loginTime: new Date().toISOString(),
+          name: 'Guest Customer',
+          joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          isGuest: true,
+        };
+        
+        await AsyncStorage.setItem('userData', JSON.stringify(dummyData));
+        router.replace('/productlist');
+        
+      } else if (userType === 'shopkeeper') {
+        const dummyShopkeeperData = {
+          phone: '8888888888',
+          userType: 'shopkeeper',
+          loginTime: new Date().toISOString(),
+          shopId: 'SHOP9999',
+          shopName: 'Demo Shop',
+          radius: '5 km',
+          deliveryCharges: '₹30',
+          minOrderAmount: '₹200',
+          isGuest: true,
+          address: '123 Demo Street, Demo City',
+          categories: ['Groceries', 'Vegetables', 'Dairy'],
+          rating: 4.5,
+          totalOrders: 150,
+        };
+        
+        await AsyncStorage.setItem('shopkeeperData', JSON.stringify(dummyShopkeeperData));
+        router.replace('/shopkeeper/shopkeeper-dashboard');
+      }
     } catch (error) {
       console.error('Skip login error:', error);
-      router.replace('/productlist');
+      // Navigate anyway even if storage fails
+      if (userType === 'customer') {
+        router.replace('/productlist');
+      } else if (userType === 'shopkeeper') {
+        router.replace('/shopkeeper/shopkeeper-dashboard');
+      }
     }
   };
 
@@ -271,6 +298,18 @@ const LoginScreen: React.FC = () => {
     setAdminFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // Get skip button text based on user type
+  const getSkipButtonText = () => {
+    switch (userType) {
+      case 'customer':
+        return 'Continue as Guest Customer';
+      case 'shopkeeper':
+        return 'Continue as Demo Shopkeeper';
+      default:
+        return 'Continue as Guest';
     }
   };
 
@@ -511,15 +550,26 @@ const LoginScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Skip Login - Only show for customer */}
-            {userType === 'customer' && (
+            {/* Skip Login - Show for both customer and shopkeeper, hide for admin */}
+            {(userType === 'customer' || userType === 'shopkeeper') && (
               <TouchableOpacity 
                 style={styles.skipContainer}
                 onPress={handleSkipLogin}
+                disabled={loading}
               >
-                <Text style={styles.skipText}>Continue as Guest</Text>
+                <Text style={styles.skipText}>{getSkipButtonText()}</Text>
                 <Ionicons name="arrow-forward" size={16} color="#fff" />
               </TouchableOpacity>
+            )}
+
+            {/* Information message for shopkeeper demo */}
+            {userType === 'shopkeeper' && (
+              <View style={styles.infoContainer}>
+                <Ionicons name="information-circle-outline" size={16} color="rgba(255, 255, 255, 0.8)" />
+                <Text style={styles.infoText}>
+                  Demo mode provides sample data for testing shopkeeper features
+                </Text>
+              </View>
             )}
 
             {/* Footer */}
@@ -740,13 +790,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 15,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   skipText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     marginRight: 8,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  infoText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    marginLeft: 6,
+    textAlign: 'center',
+    flex: 1,
   },
   footer: {
     alignItems: 'center',
