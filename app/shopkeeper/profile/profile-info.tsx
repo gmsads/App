@@ -6,46 +6,38 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Image,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons, MaterialIcons, FontAwesome5, Feather } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 type ShopProfile = {
   shopId: string;
   shopName: string;
   ownerName: string;
+  phoneNumber: string;
   email: string;
-  phone: string;
+  gpsCoordinates?: {
+    latitude: number;
+    longitude: number;
+  };
   address: string;
-  city: string;
-  pincode: string;
-  gstNumber?: string;
-  shopType: string;
-  registrationDate: string;
-  status: 'active' | 'pending' | 'suspended';
-  radius: string;
-  deliveryCharges: string;
-  minOrderAmount: string;
+  zipcode: string;
+  uploadedImages?: string[];
 };
 
 const ProfileInfo: React.FC = () => {
   const router = useRouter();
   const [profile, setProfile] = useState<ShopProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState({
-    totalOrders: 1245,
-    completedOrders: 1180,
-    pendingOrders: 15,
-    cancelledOrders: 50,
-    totalRevenue: 254800,
-    avgRating: 4.5,
-  });
+  const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
     loadProfile();
-    loadStats();
+    loadImages();
   }, []);
 
   const loadProfile = async () => {
@@ -58,18 +50,14 @@ const ProfileInfo: React.FC = () => {
           shopId: 'SHOP12345',
           shopName: 'FreshMart Supermarket',
           ownerName: 'Rajesh Kumar',
+          phoneNumber: '+91 9876543210',
           email: 'rajesh@freshmart.com',
-          phone: '+91 9876543210',
-          address: '123 Main Street, Market Area',
-          city: 'New Delhi',
-          pincode: '110001',
-          gstNumber: 'GSTIN123456789',
-          shopType: 'Supermarket',
-          registrationDate: '15 Jan 2023',
-          status: 'active',
-          radius: '5 km',
-          deliveryCharges: '₹30',
-          minOrderAmount: '₹200',
+          gpsCoordinates: {
+            latitude: 28.6139,
+            longitude: 77.2090,
+          },
+          address: '123 Main Street, Market Area, New Delhi',
+          zipcode: '110001',
         };
         setProfile(demoProfile);
         await AsyncStorage.setItem('shopProfile', JSON.stringify(demoProfile));
@@ -80,139 +68,82 @@ const ProfileInfo: React.FC = () => {
     }
   };
 
-  const loadStats = async () => {
+  const loadImages = async () => {
     try {
-      setTimeout(() => {
-        setStats({
-          totalOrders: 1280,
-          completedOrders: 1210,
-          pendingOrders: 20,
-          cancelledOrders: 50,
-          totalRevenue: 259400,
-          avgRating: 4.6,
-        });
-      }, 500);
+      // Demo images - in real app, fetch from API/storage
+      const demoImages = [
+        'https://picsum.photos/300/200?random=1',
+        'https://picsum.photos/300/200?random=2',
+        'https://picsum.photos/300/200?random=3',
+        'https://picsum.photos/300/200?random=4',
+      ];
+      setImages(demoImages);
+      
+      // You can also load from AsyncStorage if saved
+      const storedImages = await AsyncStorage.getItem('shopImages');
+      if (storedImages) {
+        setImages(JSON.parse(storedImages));
+      }
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('Error loading images:', error);
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
     loadProfile();
-    loadStats();
+    loadImages();
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const handleUpdateRequest = () => {
-    Alert.alert(
-      'Update Profile',
-      'Please contact support to update your profile information.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Contact Support', onPress: () => router.push('/shopkeeper/support') }
-      ]
-    );
+  const handleViewOnMap = () => {
+    if (profile?.gpsCoordinates) {
+      Alert.alert(
+        'Location',
+        `Latitude: ${profile.gpsCoordinates.latitude}\nLongitude: ${profile.gpsCoordinates.longitude}`,
+        [{ text: 'OK' }]
+      );
+    }
   };
 
-  const handleViewOrders = (filter: string) => {
+  const handleViewImage = (imageUrl: string) => {
     Alert.alert(
-      'Coming Soon',
-      'Orders management feature is under development.',
+      'View Image',
+      'Full screen image view would open here',
       [{ text: 'OK' }]
     );
   };
 
-  const handleViewReports = () => {
-    Alert.alert(
-      'Reports',
-      'Report features are under development.',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleDeliverySettings = () => {
-    router.push('/shopkeeper/settings/delivery-settings');
-  };
-
-  const handleShopSettings = () => {
-    router.push('/shopkeeper/settings/shop-settings');
-  };
-
-  const profileSections = [
-    {
-      title: 'Personal Information',
-      items: [
-        { icon: 'store' as const, label: 'Shop Name', value: profile?.shopName },
-        { icon: 'person' as const, label: 'Owner Name', value: profile?.ownerName },
-        { icon: 'email' as const, label: 'Email', value: profile?.email },
-        { icon: 'phone' as const, label: 'Phone', value: profile?.phone },
-        { icon: 'home' as const, label: 'Address', value: profile?.address },
-        { icon: 'location-city' as const, label: 'City', value: profile?.city },
-        { icon: 'mail' as const, label: 'Pincode', value: profile?.pincode },
-      ],
-    },
-    {
-      title: 'Business Information',
-      items: [
-        { icon: 'badge' as const, label: 'Shop ID', value: profile?.shopId },
-        { icon: 'business' as const, label: 'Shop Type', value: profile?.shopType },
-        { icon: 'receipt' as const, label: 'GST Number', value: profile?.gstNumber || 'Not Provided' },
-        { icon: 'date-range' as const, label: 'Registration Date', value: profile?.registrationDate },
-        { icon: 'circle' as const, label: 'Status', value: profile?.status, status: true },
-      ],
-    },
-    {
-      title: 'Delivery Settings',
-      items: [
-        { icon: 'my-location' as const, label: 'Delivery Radius', value: profile?.radius },
-        { icon: 'local-shipping' as const, label: 'Delivery Charges', value: profile?.deliveryCharges },
-        { icon: 'payment' as const, label: 'Minimum Order', value: profile?.minOrderAmount },
-      ],
-    },
+  const profileFields = [
+    { icon: 'store' as const, label: 'Shop ID', value: profile?.shopId },
+    { icon: 'store' as const, label: 'Shop Name', value: profile?.shopName },
+    { icon: 'person' as const, label: 'Owner Name', value: profile?.ownerName },
+    { icon: 'phone' as const, label: 'Phone Number', value: profile?.phoneNumber },
+    { icon: 'email' as const, label: 'Email', value: profile?.email },
+    { icon: 'location-on' as const, label: 'Address', value: profile?.address },
+    { icon: 'location-city' as const, label: 'Zipcode', value: profile?.zipcode },
   ];
 
-  const orderStats = [
-    { label: 'Total Orders', value: stats.totalOrders, icon: 'receipt' as const, color: '#2196F3' },
-    { label: 'Completed', value: stats.completedOrders, icon: 'check-circle' as const, color: '#4CAF50' },
-    { label: 'Pending', value: stats.pendingOrders, icon: 'schedule' as const, color: '#FF9800' },
-    { label: 'Cancelled', value: stats.cancelledOrders, icon: 'cancel' as const, color: '#f44336' },
-  ];
-
-  const actionButtons = [
-    { 
-      title: 'Update Profile', 
-      icon: 'edit' as const, 
-      color: '#2196F3', 
-      onPress: handleUpdateRequest 
-    },
-    { 
-      title: 'Shop Settings', 
-      icon: 'settings' as const, 
-      color: '#4CAF50', 
-      onPress: handleShopSettings 
-    },
-    { 
-      title: 'View Orders', 
-      icon: 'list-alt' as const, 
-      color: '#FF9800', 
-      onPress: () => handleViewOrders('all') 
-    },
-    { 
-      title: 'Reports', 
-      icon: 'analytics' as const, 
-      color: '#9C27B0', 
-      onPress: handleViewReports 
-    },
-  ];
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    return dateString;
-  };
+  const renderImageItem = ({ item }: { item: string }) => (
+    <TouchableOpacity 
+      style={styles.imageItem}
+      onPress={() => handleViewImage(item)}
+      activeOpacity={0.7}
+    >
+      <Image source={{ uri: item }} style={styles.image} />
+      <View style={styles.imageOverlay}>
+        <MaterialIcons name="zoom-in" size={24} color="#fff" />
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
-    <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+    <ScrollView 
+      style={styles.container} 
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -225,169 +156,133 @@ const ProfileInfo: React.FC = () => {
         <View style={styles.headerContent}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{profile?.shopName?.charAt(0) || 'S'}</Text>
+              <Text style={styles.avatarText}>
+                {profile?.shopName?.charAt(0) || 'S'}
+              </Text>
             </View>
-            <View style={[styles.onlineIndicator, { backgroundColor: profile?.status === 'active' ? '#4CAF50' : profile?.status === 'pending' ? '#FF9800' : '#f44336' }]} />
           </View>
           
           <View style={styles.headerInfo}>
-            <Text style={styles.shopName}>{profile?.shopName || 'Loading...'}</Text>
-            <Text style={styles.shopId}>ID: {profile?.shopId || 'SHOP12345'}</Text>
-            <View style={styles.ratingContainer}>
-              <MaterialIcons name="star" size={16} color="#FFD700" />
-              <Text style={styles.rating}>{stats.avgRating}</Text>
-              <View style={[
-                styles.statusBadgeContainer, 
-                { backgroundColor: profile?.status === 'active' ? 'rgba(76, 175, 80, 0.3)' : 
-                  profile?.status === 'pending' ? 'rgba(255, 152, 0, 0.3)' : 'rgba(244, 67, 54, 0.3)' }
-              ]}>
-                <Text style={styles.statusBadge}>● {profile?.status?.toUpperCase() || 'ACTIVE'}</Text>
-              </View>
-            </View>
+            <Text style={styles.shopName}>
+              {profile?.shopName || 'Loading...'}
+            </Text>
+            <Text style={styles.shopId}>
+              ID: {profile?.shopId || 'SHOP12345'}
+            </Text>
           </View>
-        </View>
-      </View>
-
-      {/* Stats Overview */}
-      <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Order Overview</Text>
-        <View style={styles.statsGrid}>
-          {orderStats.map((stat, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.statCard}
-              onPress={() => handleViewOrders(stat.label.toLowerCase())}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
-                <MaterialIcons name={stat.icon} size={24} color={stat.color} />
-              </View>
-              <Text style={styles.statValue}>{stat.value.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        
-        <TouchableOpacity style={styles.revenueCard} activeOpacity={0.7}>
-          <View style={styles.revenueInfo}>
-            <Text style={styles.revenueLabel}>Total Revenue</Text>
-            <Text style={styles.revenueValue}>₹{stats.totalRevenue.toLocaleString()}</Text>
-          </View>
-          <View style={styles.revenueTrend}>
-            <Feather name="trending-up" size={20} color="#4CAF50" />
-            <Text style={styles.trendText}>+12% this month</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.actionsSection}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          {actionButtons.map((button, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.actionButton} 
-              onPress={button.onPress}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: button.color }]}>
-                <MaterialIcons name={button.icon} size={24} color="#fff" />
-              </View>
-              <Text style={styles.actionText}>{button.title}</Text>
-            </TouchableOpacity>
-          ))}
         </View>
       </View>
 
       {/* Profile Details */}
       <View style={styles.detailsSection}>
-        {profileSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={styles.sectionCard}>
-            <Text style={styles.sectionCardTitle}>{section.title}</Text>
-            {section.items.map((item, itemIndex) => (
-              <View key={itemIndex} style={styles.detailRow}>
-                <View style={styles.detailLabelContainer}>
-                  <MaterialIcons name={item.icon} size={20} color="#666" style={styles.detailIcon} />
-                  <Text style={styles.detailLabel}>{item.label}</Text>
-                </View>
-                <Text style={[
-                  styles.detailValue,
-                  item.status && item.value === 'active' && styles.activeStatus,
-                  item.status && item.value === 'pending' && styles.pendingStatus,
-                  item.status && item.value === 'suspended' && styles.suspendedStatus,
-                ]}>
-                  {item.value || 'N/A'}
-                </Text>
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Shop Information</Text>
+          
+          {profileFields.map((field, index) => (
+            <View key={index} style={styles.detailRow}>
+              <View style={styles.detailLabelContainer}>
+                <MaterialIcons 
+                  name={field.icon} 
+                  size={20} 
+                  color="#666" 
+                  style={styles.detailIcon} 
+                />
+                <Text style={styles.detailLabel}>{field.label}</Text>
               </View>
-            ))}
-          </View>
-        ))}
+              <Text style={styles.detailValue}>
+                {field.value || 'Not Available'}
+              </Text>
+            </View>
+          ))}
+
+          {/* GPS Coordinates */}
+          {profile?.gpsCoordinates && (
+            <TouchableOpacity 
+              style={[styles.detailRow, styles.gpsRow]}
+              onPress={handleViewOnMap}
+              activeOpacity={0.7}
+            >
+              <View style={styles.detailLabelContainer}>
+                <MaterialIcons 
+                  name="my-location" 
+                  size={20} 
+                  color="#666" 
+                  style={styles.detailIcon} 
+                />
+                <Text style={styles.detailLabel}>Location Coordinates</Text>
+              </View>
+              <View style={styles.gpsValue}>
+                <Text style={styles.gpsText}>
+                  {profile.gpsCoordinates.latitude.toFixed(4)}, 
+                  {profile.gpsCoordinates.longitude.toFixed(4)}
+                </Text>
+                <MaterialIcons name="chevron-right" size={20} color="#999" />
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* Additional Stats */}
-      <View style={styles.additionalStats}>
-        <TouchableOpacity style={styles.statItem} activeOpacity={0.7}>
-          <FontAwesome5 name="calendar-check" size={20} color="#2196F3" />
-          <View style={styles.statItemInfo}>
-            <Text style={styles.statItemLabel}>Average Orders/Day</Text>
-            <Text style={styles.statItemValue}>15</Text>
+      {/* Uploaded Images */}
+      <View style={styles.imagesSection}>
+        <View style={styles.sectionCard}>
+          <View style={styles.imagesHeader}>
+            <Text style={styles.sectionTitle}>Uploaded Images</Text>
+            <Text style={styles.imagesCount}>
+              {images.length} images
+            </Text>
           </View>
-          <MaterialIcons name="chevron-right" size={20} color="#999" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.statItem} activeOpacity={0.7}>
-          <FontAwesome5 name="users" size={20} color="#4CAF50" />
-          <View style={styles.statItemInfo}>
-            <Text style={styles.statItemLabel}>Active Customers</Text>
-            <Text style={styles.statItemValue}>42</Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={20} color="#999" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.statItem} activeOpacity={0.7} onPress={handleDeliverySettings}>
-          <MaterialIcons name="timer" size={20} color="#FF9800" />
-          <View style={styles.statItemInfo}>
-            <Text style={styles.statItemLabel}>Avg Delivery Time</Text>
-            <Text style={styles.statItemValue}>45 mins</Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={20} color="#999" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Support & Help */}
-      <View style={styles.supportSection}>
-        <TouchableOpacity style={styles.supportButton} activeOpacity={0.7} onPress={() => router.push('/shopkeeper/support')}>
-          <MaterialIcons name="help-outline" size={24} color="#2196F3" />
-          <Text style={styles.supportButtonText}>Help & Support</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.supportButton} activeOpacity={0.7} onPress={() => router.push('/shopkeeper/contact-admin')}>
-          <MaterialIcons name="contact-support" size={24} color="#4CAF50" />
-          <Text style={styles.supportButtonText}>Contact Admin</Text>
-        </TouchableOpacity>
+          
+          {images.length > 0 ? (
+            <FlatList
+              data={images}
+              renderItem={renderImageItem}
+              keyExtractor={(item, index) => index.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.imagesList}
+              ListEmptyComponent={
+                <Text style={styles.noImagesText}>No images uploaded</Text>
+              }
+            />
+          ) : (
+            <View style={styles.noImagesContainer}>
+              <MaterialIcons name="photo-library" size={48} color="#ccc" />
+              <Text style={styles.noImagesText}>No images uploaded yet</Text>
+            </View>
+          )}
+          
+          <TouchableOpacity 
+            style={styles.uploadButton}
+            onPress={() => {
+              Alert.alert(
+                'Upload Images',
+                'Image upload feature coming soon',
+                [{ text: 'OK' }]
+              );
+            }}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="add-a-photo" size={20} color="#2196F3" />
+            <Text style={styles.uploadButtonText}>Upload New Images</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Registered on {formatDate(profile?.registrationDate)}</Text>
-        <Text style={styles.footerSubtext}>Last updated: Today, 10:30 AM</Text>
-        
         <TouchableOpacity 
-          style={styles.logoutButton}
+          style={styles.editButton}
           onPress={() => {
             Alert.alert(
-              'Logout',
-              'Are you sure you want to logout?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Logout', onPress: () => router.replace('/shopkeeper/shopkeeper-login') }
-              ]
+              'Edit Profile',
+              'Profile editing feature coming soon',
+              [{ text: 'OK' }]
             );
           }}
         >
-          <MaterialIcons name="logout" size={20} color="#f44336" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <MaterialIcons name="edit" size={20} color="#2196F3" />
+          <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -441,16 +336,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4CAF50',
   },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
   headerInfo: {
     flex: 1,
   },
@@ -465,164 +350,22 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 8,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rating: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginRight: 12,
-    marginLeft: 4,
-  },
-  statusBadgeContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  statusBadge: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  statsSection: {
+  detailsSection: {
     padding: 20,
     paddingTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    marginBottom: 12,
-    marginRight: '4%',
-  },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-  },
-  revenueCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  revenueInfo: {
-    flex: 1,
-  },
-  revenueLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  revenueValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  revenueTrend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  trendText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  actionsSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  actionButton: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    marginBottom: 12,
-    marginRight: '4%',
-  },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-  },
-  detailsSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
   },
   sectionCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
-    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  sectionCardTitle: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 16,
@@ -634,9 +377,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f9f9f9',
+  },
+  gpsRow: {
+    marginTop: 8,
   },
   detailLabelContainer: {
     flexDirection: 'row',
@@ -659,76 +405,82 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     flex: 1,
   },
-  activeStatus: {
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
-  pendingStatus: {
-    color: '#FF9800',
-    fontWeight: 'bold',
-  },
-  suspendedStatus: {
-    color: '#f44336',
-    fontWeight: 'bold',
-  },
-  additionalStats: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statItem: {
+  gpsValue: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f9f9f9',
-  },
-  statItemInfo: {
     flex: 1,
-    marginLeft: 12,
+    justifyContent: 'flex-end',
   },
-  statItemLabel: {
+  gpsText: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 8,
+  },
+  imagesSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  imagesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  imagesCount: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 2,
   },
-  statItemValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+  imagesList: {
+    paddingVertical: 8,
   },
-  supportSection: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 12,
+  imageItem: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    marginRight: 12,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  supportButton: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noImagesContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  noImagesText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  uploadButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 12,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    marginTop: 16,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  supportButtonText: {
+  uploadButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#2196F3',
   },
   footer: {
     padding: 20,
@@ -738,29 +490,19 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     marginTop: 8,
   },
-  footerText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  footerSubtext: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 16,
-  },
-  logoutButton: {
+  editButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#f44336',
+    borderColor: '#2196F3',
     gap: 8,
   },
-  logoutText: {
+  editButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#f44336',
+    color: '#2196F3',
   },
 });
 

@@ -1,4 +1,4 @@
-// ProductManagement.tsx (FIXED)
+// ProductManagement.tsx (UPDATED WITH unitOptions)
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProductContext } from './product-context';
+import Checkbox from 'expo-checkbox';
 
 const ProductManagement: React.FC = () => {
   const router = useRouter();
@@ -31,10 +32,15 @@ const ProductManagement: React.FC = () => {
     quantity: '',
     image: '',
     units: [] as string[],
+    unitOptions: [] as string[], // NEW
+    sameDayAvailable: false, // NEW
+    nextDayAvailable: false, // NEW
   });
 
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [subCategoryModalVisible, setSubCategoryModalVisible] = useState(false);
+  const [unitsModalVisible, setUnitsModalVisible] = useState(false); // NEW
+  const [unitOptionsModalVisible, setUnitOptionsModalVisible] = useState(false); // NEW
 
   const categories: string[] = [
     'Fruits',
@@ -191,6 +197,38 @@ const ProductManagement: React.FC = () => {
     ]
   };
 
+  // Predefined units
+  const predefinedUnits: string[] = [
+    'kg',
+    'kgs',
+    'gms',
+    'piece',
+    'pieces',
+    'bunch',
+    'bunches',
+    'pack',
+    'packs',
+    'liter',
+    'liters',
+    'ml',
+    'dozen',
+    'box',
+    'boxes',
+    'packet',
+    'packets'
+  ];
+
+  // Predefined unit options
+  const predefinedUnitOptions: string[] = [
+    '750',
+    '500',
+    '250',
+    '200',
+    '100',
+    '50',
+    '1'
+  ];
+
   const handleAddProduct = () => {
     router.push('/admin/add-product');
   };
@@ -220,19 +258,33 @@ const ProductManagement: React.FC = () => {
   const handleEditProduct = (product: any) => {
     setSelectedProduct(product);
     
-    // Fix: Ensure units is an array
+    // Fix: Ensure units and unitOptions are arrays
     let unitsArray: string[] = [];
     if (product.units) {
       if (Array.isArray(product.units)) {
         unitsArray = product.units;
       } else if (typeof product.units === 'string') {
-        // Try to parse string to array
         try {
           unitsArray = product.units.split(',').map((unit: string) => unit.trim());
         } catch {
           unitsArray = [product.units];
         }
       }
+    }
+    
+    let unitOptionsArray: string[] = [];
+    if (product.unitOptions) {
+      if (Array.isArray(product.unitOptions)) {
+        unitOptionsArray = product.unitOptions;
+      } else if (typeof product.unitOptions === 'string') {
+        try {
+          unitOptionsArray = product.unitOptions.split(',').map((option: string) => option.trim());
+        } catch {
+          unitOptionsArray = [product.unitOptions];
+        }
+      }
+    } else {
+      unitOptionsArray = ['1']; // Default
     }
     
     setEditProductData({
@@ -244,22 +296,42 @@ const ProductManagement: React.FC = () => {
       quantity: product.quantity.toString(),
       image: product.image || '',
       units: unitsArray,
+      unitOptions: unitOptionsArray,
+      sameDayAvailable: product.sameDayAvailable || false,
+      nextDayAvailable: product.nextDayAvailable || false,
     });
     setEditModalVisible(true);
   };
 
   const handleUpdateProduct = () => {
-    if (!editProductData.name || !editProductData.price || !editProductData.quantity || !editProductData.category) {
+    if (!editProductData.name || !editProductData.price || !editProductData.quantity || !editProductData.category || editProductData.units.length === 0) {
       Alert.alert('Error', 'Please fill in all required fields (*)');
+      return;
+    }
+
+    // Validate price is a valid number
+    const priceNum = parseFloat(editProductData.price);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      Alert.alert('Error', 'Please enter a valid price');
+      return;
+    }
+
+    // Validate quantity is a valid number
+    const quantityNum = parseInt(editProductData.quantity);
+    if (isNaN(quantityNum) || quantityNum < 0) {
+      Alert.alert('Error', 'Please enter a valid quantity');
       return;
     }
 
     if (selectedProduct) {
       const result = updateProduct(selectedProduct.id, {
         ...editProductData,
-        quantity: parseInt(editProductData.quantity) || 0,
+        quantity: quantityNum,
         price: editProductData.price,
-        units: editProductData.units
+        units: editProductData.units,
+        unitOptions: editProductData.unitOptions.length > 0 ? editProductData.unitOptions : ['1'],
+        sameDayAvailable: editProductData.sameDayAvailable,
+        nextDayAvailable: editProductData.nextDayAvailable,
       });
       
       if (result.success) {
@@ -282,13 +354,52 @@ const ProductManagement: React.FC = () => {
     setSubCategoryModalVisible(false);
   };
 
+  const handleUnitToggle = (unit: string) => {
+    const updatedUnits = [...editProductData.units];
+    if (updatedUnits.includes(unit)) {
+      const index = updatedUnits.indexOf(unit);
+      updatedUnits.splice(index, 1);
+    } else {
+      updatedUnits.push(unit);
+    }
+    setEditProductData({ ...editProductData, units: updatedUnits });
+  };
+
+  const handleUnitOptionToggle = (unitOption: string) => {
+    const updatedUnitOptions = [...editProductData.unitOptions];
+    if (updatedUnitOptions.includes(unitOption)) {
+      const index = updatedUnitOptions.indexOf(unitOption);
+      updatedUnitOptions.splice(index, 1);
+    } else {
+      updatedUnitOptions.push(unitOption);
+    }
+    setEditProductData({ ...editProductData, unitOptions: updatedUnitOptions });
+  };
+
   const getCurrentSubCategories = (): string[] => {
     if (!editProductData.category) return [];
     return subCategories[editProductData.category] || [];
   };
 
+  const removeUnit = (unit: string) => {
+    const updatedUnits = editProductData.units.filter(u => u !== unit);
+    setEditProductData({ ...editProductData, units: updatedUnits });
+  };
+
+  const removeUnitOption = (unitOption: string) => {
+    const updatedUnitOptions = editProductData.unitOptions.filter(u => u !== unitOption);
+    setEditProductData({ ...editProductData, unitOptions: updatedUnitOptions });
+  };
+
+  const closeAllModals = () => {
+    setCategoryModalVisible(false);
+    setSubCategoryModalVisible(false);
+    setUnitsModalVisible(false);
+    setUnitOptionsModalVisible(false);
+  };
+
   const renderProductItem = ({ item }: { item: any }) => {
-    // Fix: Ensure units is always an array for display
+    // Fix: Ensure units and unitOptions are always arrays for display
     let displayUnits = 'N/A';
     if (item.units) {
       if (Array.isArray(item.units)) {
@@ -296,6 +407,17 @@ const ProductManagement: React.FC = () => {
       } else if (typeof item.units === 'string') {
         displayUnits = item.units;
       }
+    }
+    
+    let displayUnitOptions = 'N/A';
+    if (item.unitOptions) {
+      if (Array.isArray(item.unitOptions)) {
+        displayUnitOptions = item.unitOptions.join(', ');
+      } else if (typeof item.unitOptions === 'string') {
+        displayUnitOptions = item.unitOptions;
+      }
+    } else {
+      displayUnitOptions = '1';
     }
     
     return (
@@ -314,6 +436,13 @@ const ProductManagement: React.FC = () => {
           </Text>
           <Text style={styles.productQuantity}>Quantity: {item.quantity}</Text>
           <Text style={styles.productUnits}>Units: {displayUnits}</Text>
+          <Text style={styles.productUnitOptions}>Unit Options: {displayUnitOptions}</Text>
+          <View style={styles.deliveryInfo}>
+            <Text style={styles.deliveryText}>
+              Same Day: {item.sameDayAvailable ? '✓' : '✗'} | 
+              Next Day: {item.nextDayAvailable ? '✓' : '✗'}
+            </Text>
+          </View>
         </View>
         <View style={styles.productActions}>
           <TouchableOpacity 
@@ -425,6 +554,18 @@ const ProductManagement: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
+                <Text style={styles.label}>Quantity *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editProductData.quantity}
+                  onChangeText={(text) => setEditProductData({ ...editProductData, quantity: text })}
+                  placeholder="Enter quantity"
+                  placeholderTextColor="#95a5a6"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Category *</Text>
                 <TouchableOpacity 
                   style={styles.input} 
@@ -453,20 +594,92 @@ const ProductManagement: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Quantity *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editProductData.quantity}
-                  onChangeText={(text) => setEditProductData({ ...editProductData, quantity: text })}
-                  placeholder="Enter quantity"
-                  placeholderTextColor="#95a5a6"
-                  keyboardType="numeric"
-                />
+                <Text style={styles.label}>Units *</Text>
+                <TouchableOpacity 
+                  style={styles.input} 
+                  onPress={() => setUnitsModalVisible(true)}
+                >
+                  <Text style={editProductData.units.length > 0 ? styles.selectedText : styles.placeholderText}>
+                    {editProductData.units.length > 0 
+                      ? `Selected: ${editProductData.units.join(', ')}` 
+                      : 'Select Units'}
+                  </Text>
+                </TouchableOpacity>
+                
+                {/* Selected Units Display */}
+                {editProductData.units.length > 0 && (
+                  <View style={styles.selectedUnitsContainer}>
+                    <View style={styles.unitsChips}>
+                      {editProductData.units.map((unit, index) => (
+                        <View key={index} style={styles.unitChip}>
+                          <Text style={styles.unitChipText}>{unit}</Text>
+                          <TouchableOpacity 
+                            onPress={() => removeUnit(unit)}
+                            style={styles.removeUnitButton}
+                          >
+                            <Text style={styles.removeUnitText}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Units: {editProductData.units.join(', ')}</Text>
-                <Text style={styles.unitsHint}>Units cannot be edited. Delete and recreate if needed.</Text>
+                <Text style={styles.label}>Unit Options</Text>
+                <Text style={styles.subLabel}>e.g., 750ml, 500g, etc.</Text>
+                <TouchableOpacity 
+                  style={styles.input} 
+                  onPress={() => setUnitOptionsModalVisible(true)}
+                >
+                  <Text style={editProductData.unitOptions.length > 0 ? styles.selectedText : styles.placeholderText}>
+                    {editProductData.unitOptions.length > 0 
+                      ? `Selected: ${editProductData.unitOptions.join(', ')}` 
+                      : 'Select Unit Options'}
+                  </Text>
+                </TouchableOpacity>
+                
+                {/* Selected Unit Options Display */}
+                {editProductData.unitOptions.length > 0 && (
+                  <View style={styles.selectedUnitsContainer}>
+                    <View style={styles.unitsChips}>
+                      {editProductData.unitOptions.map((unitOption, index) => (
+                        <View key={index} style={styles.unitChip}>
+                          <Text style={styles.unitChipText}>{unitOption}</Text>
+                          <TouchableOpacity 
+                            onPress={() => removeUnitOption(unitOption)}
+                            style={styles.removeUnitButton}
+                          >
+                            <Text style={styles.removeUnitText}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Delivery Options</Text>
+                <View style={styles.checkboxContainer}>
+                  <View style={styles.checkboxRow}>
+                    <Checkbox
+                      value={editProductData.sameDayAvailable}
+                      onValueChange={(value) => setEditProductData({ ...editProductData, sameDayAvailable: value })}
+                      color={editProductData.sameDayAvailable ? '#27ae60' : undefined}
+                    />
+                    <Text style={styles.checkboxLabel}>Same Day Delivery</Text>
+                  </View>
+                  <View style={styles.checkboxRow}>
+                    <Checkbox
+                      value={editProductData.nextDayAvailable}
+                      onValueChange={(value) => setEditProductData({ ...editProductData, nextDayAvailable: value })}
+                      color={editProductData.nextDayAvailable ? '#27ae60' : undefined}
+                    />
+                    <Text style={styles.checkboxLabel}>Next Day Delivery</Text>
+                  </View>
+                </View>
               </View>
 
               <View style={styles.modalButtons}>
@@ -488,11 +701,12 @@ const ProductManagement: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Category Modal */}
       <Modal
         visible={categoryModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setCategoryModalVisible(false)}
+        onRequestClose={closeAllModals}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -511,7 +725,7 @@ const ProductManagement: React.FC = () => {
             />
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setCategoryModalVisible(false)}
+              onPress={closeAllModals}
             >
               <Text style={styles.modalCloseButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -519,11 +733,12 @@ const ProductManagement: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Sub Category Modal */}
       <Modal
         visible={subCategoryModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setSubCategoryModalVisible(false)}
+        onRequestClose={closeAllModals}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -542,9 +757,78 @@ const ProductManagement: React.FC = () => {
             />
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setSubCategoryModalVisible(false)}
+              onPress={closeAllModals}
             >
               <Text style={styles.modalCloseButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Units Modal */}
+      <Modal
+        visible={unitsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeAllModals}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Units (Multiple)</Text>
+            <FlatList
+              data={predefinedUnits}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <View style={styles.modalItemWithCheckbox}>
+                  <Checkbox
+                    value={editProductData.units.includes(item)}
+                    onValueChange={() => handleUnitToggle(item)}
+                    color={editProductData.units.includes(item) ? '#27ae60' : undefined}
+                  />
+                  <Text style={styles.modalItemText}>{item}</Text>
+                </View>
+              )}
+            />
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={closeAllModals}
+            >
+              <Text style={styles.modalCloseButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Unit Options Modal */}
+      <Modal
+        visible={unitOptionsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeAllModals}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Unit Options (Multiple)</Text>
+            <Text style={styles.modalSubtitle}>e.g., 750, 500, 250, etc.</Text>
+            <FlatList
+              data={predefinedUnitOptions}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <View style={styles.modalItemWithCheckbox}>
+                  <Checkbox
+                    value={editProductData.unitOptions.includes(item)}
+                    onValueChange={() => handleUnitOptionToggle(item)}
+                    color={editProductData.unitOptions.includes(item) ? '#27ae60' : undefined}
+                  />
+                  <Text style={styles.modalItemText}>{item}</Text>
+                </View>
+              )}
+            />
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={closeAllModals}
+            >
+              <Text style={styles.modalCloseButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -651,6 +935,19 @@ const styles = StyleSheet.create({
   productUnits: {
     fontSize: 12,
     color: '#7f8c8d',
+    marginBottom: 2,
+  },
+  productUnitOptions: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginBottom: 2,
+  },
+  deliveryInfo: {
+    marginTop: 4,
+  },
+  deliveryText: {
+    fontSize: 11,
+    color: '#7f8c8d',
   },
   productActions: {
     flexDirection: 'row',
@@ -727,6 +1024,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#2c3e50',
   },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
   editForm: {
     maxHeight: 500,
   },
@@ -738,6 +1041,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2c3e50',
     marginBottom: 6,
+  },
+  subLabel: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginBottom: 6,
+    fontStyle: 'italic',
   },
   input: {
     backgroundColor: '#fff',
@@ -772,11 +1081,34 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 8,
   },
-  unitsHint: {
+  selectedUnitsContainer: {
+    marginTop: 10,
+  },
+  unitsChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  unitChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3498db',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  unitChipText: {
+    color: 'white',
     fontSize: 12,
-    color: '#7f8c8d',
-    fontStyle: 'italic',
-    marginTop: 4,
+    marginRight: 6,
+  },
+  removeUnitButton: {
+    padding: 2,
+  },
+  removeUnitText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -812,6 +1144,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ecf0f1',
   },
+  modalItemWithCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+    gap: 12,
+  },
   modalItemText: {
     fontSize: 14,
     color: '#2c3e50',
@@ -820,13 +1160,30 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     marginTop: 8,
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#3498db',
     borderRadius: 8,
   },
   modalCloseButtonText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  checkboxContainer: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 10,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#2c3e50',
   },
 });
 

@@ -96,7 +96,7 @@ const ShopkeeperDashboard: React.FC = () => {
       screen: '/shopkeeper/orders/orders-list?filter=today',
     },
     {
-      title: 'My List',
+      title: 'Orders',
       count: 15,
       icon: 'list-alt',
       color: '#9C27B0',
@@ -126,7 +126,7 @@ const ShopkeeperDashboard: React.FC = () => {
       screen: '/shopkeeper/products/add-product',
     },
     {
-      title: 'Update Prices',
+      title: 'Banner',
       icon: 'edit',
       color: '#FF9800',
       screen: '/shopkeeper/my-list/my-list',
@@ -138,7 +138,7 @@ const ShopkeeperDashboard: React.FC = () => {
       screen: '/shopkeeper/settings/delivery-settings',
     },
     {
-      title: 'View Profile',
+      title: 'Report',
       icon: 'person',
       color: '#9C27B0',
       screen: '/shopkeeper/profile/profile-info',
@@ -219,28 +219,6 @@ const ShopkeeperDashboard: React.FC = () => {
           <Text style={styles.sectionTitle}>Dashboard</Text>
           <View style={styles.dashboardGrid}>
             {dashboardCards.map(renderDashboardCard)}
-          </View>
-        </View>
-
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <View style={styles.activityList}>
-            {[
-              { text: 'New order received (#ORD1001)', time: '10 mins ago' },
-              { text: 'Product "Tomatoes" price updated', time: '1 hour ago' },
-              { text: 'Order #ORD1000 delivered', time: '2 hours ago' },
-              { text: 'New product "Apples" added', time: '3 hours ago' },
-              { text: 'Delivery settings updated', time: '1 day ago' },
-            ].map((activity, index) => (
-              <View key={index} style={styles.activityItem}>
-                <View style={styles.activityDot} />
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityText}>{activity.text}</Text>
-                  <Text style={styles.activityTime}>{activity.time}</Text>
-                </View>
-              </View>
-            ))}
           </View>
         </View>
 
@@ -400,36 +378,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'right',
-  },
-  activityList: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
-    marginTop: 6,
-    marginRight: 12,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 2,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: '#999',
   },
   metricsContainer: {
     flexDirection: 'row',

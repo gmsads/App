@@ -1,8 +1,8 @@
-// product-context.tsx
+// product-context.tsx (UPDATED)
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Define the Product interface
+// Define the Product interface - UPDATED WITH unitOptions
 export interface Product {
   id: string;
   name: string;
@@ -12,7 +12,8 @@ export interface Product {
   subCategory: string;
   quantity: number;
   image: string | null;
-  units: string[];
+  units: string[];        // Admin-defined units [kg, gms, dozen, pieces...]
+  unitOptions: string[];  // NEW: Unit values [750, 500, 250, 200, 100, 50, 1, custom]
   sameDayAvailable: boolean;
   nextDayAvailable: boolean;
 }
@@ -61,19 +62,18 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         // Parse the stored products from JSON string to JavaScript array
         const parsedProducts: any[] = JSON.parse(storedProducts);
         
-        // Fix: Ensure all products have proper units array
-        // Map through each product and fix the units field
+        // Fix: Ensure all products have proper units and unitOptions arrays
         const fixedProducts = parsedProducts.map(product => ({
           // Spread all existing product properties
           ...product,
-          // Fix the units field:
-          // 1. If product has units field
-          // 2. Check if it's already an array
-          // 3. If yes, keep as is; if no, convert to array with single item
-          // 4. If no units field, set to empty array
+          // Fix the units field
           units: product.units 
             ? (Array.isArray(product.units) ? product.units : [product.units])
-            : []
+            : [],
+          // Fix the unitOptions field - NEW
+          unitOptions: product.unitOptions 
+            ? (Array.isArray(product.unitOptions) ? product.unitOptions : [product.unitOptions])
+            : (product.units ? [] : ['1']) // Default to ['1'] if no unitOptions exists
         }));
         
         // Update the state with the fixed products

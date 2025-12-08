@@ -16,25 +16,17 @@ import {
   Ionicons,
 } from '@expo/vector-icons';
 
+// Define the interface to match your JSON structure
 interface DeliverySettings {
-  deliveryCharges: string;
-  minOrderAmount: string;
-  deliveryTypes: {
-    sameDay: boolean;
-    nextDay: boolean;
-    thirtyMinutes: boolean;
-    oneHour: boolean;
-  };
-  deliverySlots: {
-    sameDay: string[];
-    nextDay: string[];
-  };
-  availableSlots: {
-    label: string;
-    value: string;
-  }[];
+  shopId: number;
+  minOrder: string;
+  deliveryFee: string;
+  deliveryTypes: string[];
+  sameDayDeliverySlots: string[];
+  nextDayDeliverySlots: string[];
 }
 
+// Define the delivery slot interface
 interface DeliverySlot {
   label: string;
   value: string;
@@ -42,70 +34,109 @@ interface DeliverySlot {
 
 const DeliverySettings: React.FC = () => {
   const router = useRouter();
-  const [settings, setSettings] = useState<DeliverySettings>({
-    deliveryCharges: '30',
-    minOrderAmount: '200',
-    deliveryTypes: {
-      sameDay: true,
-      nextDay: true,
-      thirtyMinutes: false,
-      oneHour: true,
-    },
-    deliverySlots: {
-      sameDay: ['6am-9am', '9am-12pm', '12pm-3pm'],
-      nextDay: ['Morning', 'Evening', '6am-12pm', '12pm-7pm'],
-    },
-    availableSlots: [
-      { label: '6am to 9am', value: '6am-9am' },
-      { label: '9am to 12pm', value: '9am-12pm' },
-      { label: '12pm to 3pm', value: '12pm-3pm' },
-      { label: '3pm to 6pm', value: '3pm-6pm' },
-      { label: '6am to 12pm', value: '6am-12pm' },
-      { label: '12pm to 7pm', value: '12pm-7pm' },
-      { label: 'Morning', value: 'Morning' },
-      { label: 'Evening', value: 'Evening' },
-    ],
-  });
+  
+  // Predefined available time slots
+  const defaultSlots: DeliverySlot[] = [
+    { label: '07:00 AM - 09:00 AM', value: '07:00 AM - 09:00 AM' },
+    { label: '09:00 AM - 11:00 AM', value: '09:00 AM - 11:00 AM' },
+    { label: '10:00 AM - 12:00 PM', value: '10:00 AM - 12:00 PM' },
+    { label: '12:00 PM - 02:00 PM', value: '12:00 PM - 02:00 PM' },
+    { label: '02:00 PM - 04:00 PM', value: '02:00 PM - 04:00 PM' },
+    { label: '04:00 PM - 06:00 PM', value: '04:00 PM - 06:00 PM' },
+    { label: '05:00 PM - 07:00 PM', value: '05:00 PM - 07:00 PM' },
+    { label: '06:00 PM - 08:00 PM', value: '06:00 PM - 08:00 PM' },
+  ];
 
+  // Default settings based on your JSON
+  const defaultSettings: DeliverySettings = {
+    shopId: 101,
+    minOrder: '150',
+    deliveryFee: '20',
+    deliveryTypes: ['SameDay', 'NextDay'],
+    sameDayDeliverySlots: [
+      '07:00 AM - 09:00 AM',
+      '10:00 AM - 12:00 PM',
+      '05:00 PM - 07:00 PM'
+    ],
+    nextDayDeliverySlots: [
+      '07:00 AM - 09:00 AM',
+      '10:00 AM - 12:00 PM'
+    ],
+  };
+
+  // State declarations
+  const [settings, setSettings] = useState<DeliverySettings>(defaultSettings);
+  const [availableSlots] = useState<DeliverySlot[]>(defaultSlots);
   const [loading, setLoading] = useState(false);
   const [tempSlots, setTempSlots] = useState({
-    sameDay: [...settings.deliverySlots.sameDay],
-    nextDay: [...settings.deliverySlots.nextDay],
+    sameDay: [...defaultSettings.sameDayDeliverySlots],
+    nextDay: [...defaultSettings.nextDayDeliverySlots],
   });
 
+  // Load saved settings on component mount
   useEffect(() => {
     loadSettings();
   }, []);
 
+  // Function to load settings from AsyncStorage with proper error handling
   const loadSettings = async () => {
     try {
       const data = await AsyncStorage.getItem('deliverySettings');
       if (data) {
         const parsedData = JSON.parse(data);
-        setSettings(parsedData);
-        setTempSlots(parsedData.deliverySlots);
+        
+        // Ensure all fields exist with fallback values
+        const loadedSettings: DeliverySettings = {
+          shopId: parsedData.shopId || defaultSettings.shopId,
+          minOrder: parsedData.minOrder || parsedData.minOrderAmount || defaultSettings.minOrder,
+          deliveryFee: parsedData.deliveryFee || parsedData.deliveryCharges || defaultSettings.deliveryFee,
+          deliveryTypes: Array.isArray(parsedData.deliveryTypes) 
+            ? parsedData.deliveryTypes 
+            : defaultSettings.deliveryTypes,
+          sameDayDeliverySlots: Array.isArray(parsedData.sameDayDeliverySlots)
+            ? parsedData.sameDayDeliverySlots
+            : defaultSettings.sameDayDeliverySlots,
+          nextDayDeliverySlots: Array.isArray(parsedData.nextDayDeliverySlots)
+            ? parsedData.nextDayDeliverySlots
+            : defaultSettings.nextDayDeliverySlots,
+        };
+        
+        setSettings(loadedSettings);
+        setTempSlots({
+          sameDay: loadedSettings.sameDayDeliverySlots,
+          nextDay: loadedSettings.nextDayDeliverySlots,
+        });
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+      // Reset to defaults if there's an error
+      setSettings(defaultSettings);
+      setTempSlots({
+        sameDay: defaultSettings.sameDayDeliverySlots,
+        nextDay: defaultSettings.nextDayDeliverySlots,
+      });
     }
   };
 
+  // Function to save settings
   const handleSave = async () => {
     setLoading(true);
     try {
-      const updatedSettings = {
+      const updatedSettings: DeliverySettings = {
         ...settings,
-        deliverySlots: tempSlots,
+        sameDayDeliverySlots: tempSlots.sameDay,
+        nextDayDeliverySlots: tempSlots.nextDay,
       };
       
+      // Save to AsyncStorage
       await AsyncStorage.setItem('deliverySettings', JSON.stringify(updatedSettings));
       
-      // Also update shopkeeper data
+      // Also update shopkeeper data if needed
       const shopDataStr = await AsyncStorage.getItem('shopkeeperData');
       if (shopDataStr) {
         const shopData = JSON.parse(shopDataStr);
-        shopData.deliveryCharges = `₹${updatedSettings.deliveryCharges}`;
-        shopData.minOrderAmount = `₹${updatedSettings.minOrderAmount}`;
+        shopData.deliveryFee = `₹${updatedSettings.deliveryFee}`;
+        shopData.minOrder = `₹${updatedSettings.minOrder}`;
         await AsyncStorage.setItem('shopkeeperData', JSON.stringify(shopData));
       }
       
@@ -119,6 +150,7 @@ const DeliverySettings: React.FC = () => {
     }
   };
 
+  // Function to toggle a time slot
   const toggleSlot = (slotType: 'sameDay' | 'nextDay', slotValue: string) => {
     setTempSlots(prev => {
       const slots = [...prev[slotType]];
@@ -134,48 +166,51 @@ const DeliverySettings: React.FC = () => {
     });
   };
 
-  const toggleDeliveryType = (type: keyof typeof settings.deliveryTypes) => {
-    setSettings(prev => ({
-      ...prev,
-      deliveryTypes: {
-        ...prev.deliveryTypes,
-        [type]: !prev.deliveryTypes[type],
-      },
-    }));
+  // Function to toggle a delivery type
+  const toggleDeliveryType = (type: string) => {
+    setSettings(prev => {
+      const deliveryTypes = [...(prev.deliveryTypes || [])];
+      const index = deliveryTypes.indexOf(type);
+      
+      if (index > -1) {
+        deliveryTypes.splice(index, 1);
+      } else {
+        deliveryTypes.push(type);
+      }
+      
+      return { ...prev, deliveryTypes };
+    });
   };
 
-  const renderDeliveryType = (type: keyof typeof settings.deliveryTypes) => {
-    const labels: Record<keyof typeof settings.deliveryTypes, string> = {
-      sameDay: 'Same Day Delivery',
-      nextDay: 'Next Day Delivery',
-      thirtyMinutes: '30 Minutes Delivery',
-      oneHour: '1 Hour Delivery',
-    };
-    
-    const icons: Record<keyof typeof settings.deliveryTypes, any> = {
-      sameDay: 'today',
-      nextDay: 'date-range',
-      thirtyMinutes: 'timer',
-      oneHour: 'access-time',
-    };
+  // Check if a delivery type is active (with null safety)
+  const isDeliveryTypeActive = (type: string) => {
+    if (!settings.deliveryTypes || !Array.isArray(settings.deliveryTypes)) {
+      return false;
+    }
+    return settings.deliveryTypes.includes(type);
+  };
+
+  // Render a delivery type toggle item
+  const renderDeliveryType = (type: string, label: string, icon: string) => {
+    const isActive = isDeliveryTypeActive(type);
 
     return (
       <View key={type} style={styles.deliveryTypeItem}>
         <View style={styles.deliveryTypeInfo}>
           <MaterialIcons 
-            name={icons[type]} 
+            name={icon as any} 
             size={24} 
-            color={settings.deliveryTypes[type] ? '#4CAF50' : '#999'} 
+            color={isActive ? '#4CAF50' : '#999'} 
           />
           <Text style={[
             styles.deliveryTypeLabel,
-            !settings.deliveryTypes[type] && styles.deliveryTypeDisabled
+            !isActive && styles.deliveryTypeDisabled
           ]}>
-            {labels[type]}
+            {label}
           </Text>
         </View>
         <Switch
-          value={settings.deliveryTypes[type]}
+          value={isActive}
           onValueChange={() => toggleDeliveryType(type)}
           trackColor={{ false: '#ddd', true: '#4CAF50' }}
         />
@@ -183,13 +218,8 @@ const DeliverySettings: React.FC = () => {
     );
   };
 
+  // Render a slot selector section
   const renderSlotSelector = (slotType: 'sameDay' | 'nextDay', title: string) => {
-    const availableSlots: DeliverySlot[] = slotType === 'sameDay' 
-      ? settings.availableSlots.filter(slot => 
-          !['Morning', 'Evening'].includes(slot.label)
-        )
-      : settings.availableSlots;
-
     return (
       <View style={styles.slotSection}>
         <Text style={styles.slotTitle}>{title}</Text>
@@ -222,39 +252,27 @@ const DeliverySettings: React.FC = () => {
     );
   };
 
+  // Map delivery type codes to display names
   const deliveryTypeNames: Record<string, string> = {
-    sameDay: 'Same Day',
-    nextDay: 'Next Day',
-    thirtyMinutes: '30 Mins',
-    oneHour: '1 Hour',
+    'SameDay': 'Same Day',
+    'NextDay': 'Next Day',
+    'ThirtyMinutes': '30 Mins',
+    'OneHour': '1 Hour',
   };
 
   return (
     <ScrollView style={styles.container}>
+      {/* Header Section */}
       <View style={styles.header}>
         <MaterialIcons name="delivery-dining" size={32} color="#4CAF50" />
         <Text style={styles.headerTitle}>Delivery Settings</Text>
         <Text style={styles.headerSubtitle}>Configure your delivery preferences</Text>
       </View>
 
-      {/* Pricing Settings */}
+      {/* Pricing Settings Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Pricing Settings</Text>
         
-        <View style={styles.inputGroup}>
-          <View style={styles.inputRow}>
-            <MaterialIcons name="local-shipping" size={24} color="#666" />
-            <Text style={styles.inputLabel}>Delivery Charges (₹)</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={settings.deliveryCharges}
-            onChangeText={(value) => setSettings(prev => ({ ...prev, deliveryCharges: value }))}
-            keyboardType="numeric"
-            placeholder="Enter amount"
-          />
-        </View>
-
         <View style={styles.inputGroup}>
           <View style={styles.inputRow}>
             <MaterialIcons name="payment" size={24} color="#666" />
@@ -262,54 +280,77 @@ const DeliverySettings: React.FC = () => {
           </View>
           <TextInput
             style={styles.input}
-            value={settings.minOrderAmount}
-            onChangeText={(value) => setSettings(prev => ({ ...prev, minOrderAmount: value }))}
+            value={settings.minOrder}
+            onChangeText={(value) => setSettings(prev => ({ ...prev, minOrder: value }))}
             keyboardType="numeric"
-            placeholder="Enter amount"
+            placeholder="Enter minimum amount"
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <View style={styles.inputRow}>
+            <MaterialIcons name="local-shipping" size={24} color="#666" />
+            <Text style={styles.inputLabel}>Delivery Fee (₹)</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={settings.deliveryFee}
+            onChangeText={(value) => setSettings(prev => ({ ...prev, deliveryFee: value }))}
+            keyboardType="numeric"
+            placeholder="Enter delivery fee"
           />
         </View>
       </View>
 
-      {/* Delivery Types */}
+      {/* Delivery Types Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Delivery Types</Text>
         <Text style={styles.sectionDescription}>
           Select the delivery types you want to offer
         </Text>
         
-        {(Object.keys(settings.deliveryTypes) as Array<keyof typeof settings.deliveryTypes>).map(type => 
-          renderDeliveryType(type)
-        )}
+        {renderDeliveryType('SameDay', 'Same Day Delivery', 'today')}
+        {renderDeliveryType('NextDay', 'Next Day Delivery', 'date-range')}
+        {renderDeliveryType('ThirtyMinutes', '30 Minutes Delivery', 'timer')}
+        {renderDeliveryType('OneHour', '1 Hour Delivery', 'access-time')}
       </View>
 
-      {/* Delivery Slots */}
+      {/* Delivery Slots Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Delivery Slots</Text>
         <Text style={styles.sectionDescription}>
           Select available time slots for deliveries
         </Text>
         
-        {renderSlotSelector('sameDay', 'Same Day Delivery Slots')}
-        {renderSlotSelector('nextDay', 'Next Day Delivery Slots')}
+        {isDeliveryTypeActive('SameDay') && renderSlotSelector('sameDay', 'Same Day Delivery Slots')}
+        {isDeliveryTypeActive('NextDay') && renderSlotSelector('nextDay', 'Next Day Delivery Slots')}
       </View>
 
-      {/* Current Configuration */}
+      {/* Current Configuration Section */}
       <View style={styles.configSection}>
         <Text style={styles.configTitle}>Current Configuration</Text>
         
         <View style={styles.configItem}>
-          <MaterialIcons name="info" size={20} color="#2196F3" />
+          <MaterialIcons name="store" size={20} color="#2196F3" />
           <View style={styles.configInfo}>
-            <Text style={styles.configLabel}>Delivery Charges:</Text>
-            <Text style={styles.configValue}>₹{settings.deliveryCharges}</Text>
+            <Text style={styles.configLabel}>Shop ID:</Text>
+            <Text style={styles.configValue}>{settings.shopId}</Text>
           </View>
         </View>
         
         <View style={styles.configItem}>
-          <MaterialIcons name="info" size={20} color="#2196F3" />
+          <MaterialIcons name="payment" size={20} color="#2196F3" />
           <View style={styles.configInfo}>
             <Text style={styles.configLabel}>Min Order Amount:</Text>
-            <Text style={styles.configValue}>₹{settings.minOrderAmount}</Text>
+            <Text style={styles.configValue}>₹{settings.minOrder}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.configItem}>
+          <MaterialIcons name="local-shipping" size={20} color="#2196F3" />
+          <View style={styles.configInfo}>
+            <Text style={styles.configLabel}>Delivery Fee:</Text>
+            <Text style={styles.configValue}>₹{settings.deliveryFee}</Text>
           </View>
         </View>
         
@@ -318,13 +359,38 @@ const DeliverySettings: React.FC = () => {
           <View style={styles.configInfo}>
             <Text style={styles.configLabel}>Active Delivery Types:</Text>
             <Text style={styles.configValue}>
-              {Object.entries(settings.deliveryTypes)
-                .filter(([, value]) => value)
-                .map(([key]) => deliveryTypeNames[key])
-                .join(', ')}
+              {settings.deliveryTypes && Array.isArray(settings.deliveryTypes)
+                ? settings.deliveryTypes
+                    .map(type => deliveryTypeNames[type] || type)
+                    .join(', ') || 'None'
+                : 'None'}
             </Text>
           </View>
         </View>
+        
+        {isDeliveryTypeActive('SameDay') && (
+          <View style={styles.configItem}>
+            <MaterialIcons name="today" size={20} color="#2196F3" />
+            <View style={styles.configInfo}>
+              <Text style={styles.configLabel}>Same Day Slots:</Text>
+              <Text style={styles.configValue}>
+                {tempSlots.sameDay.length} slots selected
+              </Text>
+            </View>
+          </View>
+        )}
+        
+        {isDeliveryTypeActive('NextDay') && (
+          <View style={styles.configItem}>
+            <MaterialIcons name="date-range" size={20} color="#2196F3" />
+            <View style={styles.configInfo}>
+              <Text style={styles.configLabel}>Next Day Slots:</Text>
+              <Text style={styles.configValue}>
+                {tempSlots.nextDay.length} slots selected
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Save Button */}
@@ -343,7 +409,7 @@ const DeliverySettings: React.FC = () => {
         )}
       </TouchableOpacity>
 
-      {/* Help Text */}
+      {/* Help Text Section */}
       <View style={styles.helpSection}>
         <MaterialIcons name="help" size={20} color="#666" />
         <Text style={styles.helpText}>
@@ -354,6 +420,7 @@ const DeliverySettings: React.FC = () => {
   );
 };
 
+// Styles (same as before)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

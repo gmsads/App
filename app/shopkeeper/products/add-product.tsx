@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// app/shopkeeper/products/add-product.tsx
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,205 +8,267 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Image,
   Switch,
+  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import {
-  MaterialIcons,
-  Ionicons,
-  FontAwesome5,
-} from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-interface QuantityType {
-  type: string;
-  value: number;
-  unit: 'pcs' | 'g' | 'kg' | 'bunch' | 'dozen';
-  sameDayPrice: string;
-  nextDayPrice: string;
-  sameDayAvailable: boolean;
-  nextDayAvailable: boolean;
-  sameAsNextDay: boolean;
+interface QuantityOption {
+  quantity: string;
+  unit: string;
+  salePrice: string;
+  actualPrice: string;
+  discountPercentage: number;
+  available: boolean;
 }
 
 interface ProductForm {
+  shopId: string;
+  productId: string;
   name: string;
-  description: string;
-  category: string;
-  image: string | null;
-  quantityTypes: QuantityType[];
-  sameDayDelivery: boolean;
-  nextDayDelivery: boolean;
-  status: 'pending' | 'approved';
+  sameDayAvailable: 'Available' | 'Out of Stock' | 'Disabled';
+  nextDayAvailable: 'Available' | 'Out of Stock' | 'Disabled';
+  sameDayOptions: QuantityOption[];
+  nextDayOptions: QuantityOption[];
 }
 
 const AddProduct: React.FC = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Get shopId from your auth/store
+  const shopId = 'S987'; // Replace with actual shop ID from your auth system
+
   const [formData, setFormData] = useState<ProductForm>({
-    name: '',
-    description: '',
-    category: 'vegetables',
-    image: null,
-    quantityTypes: [
+    shopId: shopId,
+    productId: params.productId as string || '',
+    name: params.productName as string || '',
+    sameDayAvailable: 'Available',
+    nextDayAvailable: 'Available',
+    sameDayOptions: [
       {
-        type: 'Small Pack',
-        value: 250,
-        unit: 'g',
-        sameDayPrice: '',
-        nextDayPrice: '',
-        sameDayAvailable: true,
-        nextDayAvailable: true,
-        sameAsNextDay: false,
+        quantity: '',
+        unit: params.baseUnit as string || 'kg',
+        salePrice: '',
+        actualPrice: '',
+        discountPercentage: 0,
+        available: true,
       },
     ],
-    sameDayDelivery: true,
-    nextDayDelivery: true,
-    status: 'pending',
+    nextDayOptions: [
+      {
+        quantity: '',
+        unit: params.baseUnit as string || 'kg',
+        salePrice: '',
+        actualPrice: '',
+        discountPercentage: 0,
+        available: true,
+      },
+    ],
   });
 
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const categories = [
-    { value: 'vegetables', label: 'Vegetables' },
-    { value: 'fruits', label: 'Fruits' },
-    { value: 'dairy', label: 'Dairy' },
-    { value: 'groceries', label: 'Groceries' },
-    { value: 'beverages', label: 'Beverages' },
-    { value: 'snacks', label: 'Snacks' },
+  const availabilityOptions = [
+    { value: 'Available', label: 'Available', color: '#4CAF50' },
+    { value: 'Out of Stock', label: 'Out of Stock', color: '#FF9800' },
+    { value: 'Disabled', label: 'Disabled', color: '#F44336' },
   ];
 
-  const units = [
-    { value: 'pcs', label: 'Pieces' },
-    { value: 'g', label: 'Grams' },
-    { value: 'kg', label: 'Kilograms' },
-    { value: 'bunch', label: 'Bunch' },
-    { value: 'dozen', label: 'Dozen' },
-  ];
+  useEffect(() => {
+    // Calculate discount percentage whenever salePrice or actualPrice changes
+    const calculateDiscount = (salePrice: string, actualPrice: string) => {
+      const sale = parseFloat(salePrice);
+      const actual = parseFloat(actualPrice);
+      if (sale && actual && actual > sale) {
+        return Math.round(((actual - sale) / actual) * 100);
+      }
+      return 0;
+    };
 
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (!permissionResult.granted) {
-      Alert.alert('Permission required', 'Please allow access to your photos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setFormData(prev => ({ ...prev, image: result.assets[0].uri }));
-    }
-  };
-
-  const handleAddQuantityType = () => {
-    setFormData(prev => ({
-      ...prev,
-      quantityTypes: [
-        ...prev.quantityTypes,
-        {
-          type: '',
-          value: 1,
-          unit: 'kg',
-          sameDayPrice: '',
-          nextDayPrice: '',
-          sameDayAvailable: true,
-          nextDayAvailable: true,
-          sameAsNextDay: false,
-        },
-      ],
-    }));
-  };
-
-  const handleRemoveQuantityType = (index: number) => {
-    if (formData.quantityTypes.length === 1) {
-      Alert.alert('Cannot remove', 'At least one quantity type is required.');
-      return;
-    }
+    // Update discount for all quantity options
+    const updateDiscounts = (options: QuantityOption[]) => 
+      options.map(option => ({
+        ...option,
+        discountPercentage: calculateDiscount(option.salePrice, option.actualPrice),
+      }));
 
     setFormData(prev => ({
       ...prev,
-      quantityTypes: prev.quantityTypes.filter((_, i) => i !== index),
+      sameDayOptions: updateDiscounts(prev.sameDayOptions),
+      nextDayOptions: updateDiscounts(prev.nextDayOptions),
     }));
-  };
+  }, []); // We'll handle this in individual change handlers
 
-  const handleQuantityTypeChange = (index: number, field: keyof QuantityType, value: any) => {
-    const updatedTypes = [...formData.quantityTypes];
-    
-    if (field === 'sameAsNextDay' && value === true) {
-      // If setting same as next day, copy next day values to same day
-      updatedTypes[index] = {
-        ...updatedTypes[index],
-        [field]: value,
-        sameDayPrice: updatedTypes[index].nextDayPrice,
-        sameDayAvailable: updatedTypes[index].nextDayAvailable,
-      };
+  const handleAddQuantityOption = (type: 'sameDay' | 'nextDay') => {
+    if (type === 'sameDay') {
+      setFormData(prev => ({
+        ...prev,
+        sameDayOptions: [
+          ...prev.sameDayOptions,
+          {
+            quantity: '',
+            unit: params.baseUnit as string || 'kg',
+            salePrice: '',
+            actualPrice: '',
+            discountPercentage: 0,
+            available: true,
+          },
+        ],
+      }));
     } else {
-      updatedTypes[index] = {
-        ...updatedTypes[index],
+      setFormData(prev => ({
+        ...prev,
+        nextDayOptions: [
+          ...prev.nextDayOptions,
+          {
+            quantity: '',
+            unit: params.baseUnit as string || 'kg',
+            salePrice: '',
+            actualPrice: '',
+            discountPercentage: 0,
+            available: true,
+          },
+        ],
+      }));
+    }
+  };
+
+  const handleRemoveQuantityOption = (type: 'sameDay' | 'nextDay', index: number) => {
+    if (type === 'sameDay') {
+      if (formData.sameDayOptions.length === 1) {
+        Alert.alert('Cannot remove', 'At least one quantity option is required.');
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        sameDayOptions: prev.sameDayOptions.filter((_, i) => i !== index),
+      }));
+    } else {
+      if (formData.nextDayOptions.length === 1) {
+        Alert.alert('Cannot remove', 'At least one quantity option is required.');
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        nextDayOptions: prev.nextDayOptions.filter((_, i) => i !== index),
+      }));
+    }
+  };
+
+  const handleQuantityOptionChange = (
+    type: 'sameDay' | 'nextDay',
+    index: number,
+    field: keyof QuantityOption,
+    value: any
+  ) => {
+    if (type === 'sameDay') {
+      const updatedOptions = [...formData.sameDayOptions];
+      updatedOptions[index] = {
+        ...updatedOptions[index],
         [field]: value,
       };
-      
-      // If sameAsNextDay is true and nextDayPrice changes, update sameDayPrice too
-      if (field === 'nextDayPrice' && updatedTypes[index].sameAsNextDay) {
-        updatedTypes[index].sameDayPrice = value;
+
+      // Calculate discount if salePrice or actualPrice changes
+      if (field === 'salePrice' || field === 'actualPrice') {
+        const salePrice = field === 'salePrice' ? value : updatedOptions[index].salePrice;
+        const actualPrice = field === 'actualPrice' ? value : updatedOptions[index].actualPrice;
+        const sale = parseFloat(salePrice);
+        const actual = parseFloat(actualPrice);
+        if (sale && actual && actual > sale) {
+          updatedOptions[index].discountPercentage = Math.round(((actual - sale) / actual) * 100);
+        } else {
+          updatedOptions[index].discountPercentage = 0;
+        }
       }
-      if (field === 'nextDayAvailable' && updatedTypes[index].sameAsNextDay) {
-        updatedTypes[index].sameDayAvailable = value;
+
+      setFormData(prev => ({ ...prev, sameDayOptions: updatedOptions }));
+    } else {
+      const updatedOptions = [...formData.nextDayOptions];
+      updatedOptions[index] = {
+        ...updatedOptions[index],
+        [field]: value,
+      };
+
+      // Calculate discount if salePrice or actualPrice changes
+      if (field === 'salePrice' || field === 'actualPrice') {
+        const salePrice = field === 'salePrice' ? value : updatedOptions[index].salePrice;
+        const actualPrice = field === 'actualPrice' ? value : updatedOptions[index].actualPrice;
+        const sale = parseFloat(salePrice);
+        const actual = parseFloat(actualPrice);
+        if (sale && actual && actual > sale) {
+          updatedOptions[index].discountPercentage = Math.round(((actual - sale) / actual) * 100);
+        } else {
+          updatedOptions[index].discountPercentage = 0;
+        }
       }
+
+      setFormData(prev => ({ ...prev, nextDayOptions: updatedOptions }));
     }
-    
-    setFormData(prev => ({ ...prev, quantityTypes: updatedTypes }));
   };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Product name is required';
+    // Validate same day options
+    for (const option of formData.sameDayOptions) {
+      if (!option.quantity || !option.salePrice || !option.actualPrice) {
+        return false;
+      }
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+    // Validate next day options
+    for (const option of formData.nextDayOptions) {
+      if (!option.quantity || !option.salePrice || !option.actualPrice) {
+        return false;
+      }
     }
 
-    // Validate quantity types
-    formData.quantityTypes.forEach((type, index) => {
-      if (!type.type.trim()) {
-        newErrors[`quantityType_${index}`] = 'Quantity type name is required';
-      }
-      if (!type.sameDayPrice) {
-        newErrors[`sameDayPrice_${index}`] = 'Same day price is required';
-      }
-      if (!type.nextDayPrice) {
-        newErrors[`nextDayPrice_${index}`] = 'Next day price is required';
-      }
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fill all required fields correctly.');
+      Alert.alert('Validation Error', 'Please fill all required fields.');
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
+      // Prepare data according to your JSON structure
+      const submitData = {
+        productId: formData.productId,
+        name: formData.name,
+        shopId: formData.shopId,
+        sameDayAvailable: formData.sameDayAvailable,
+        nextDayAvailable: formData.nextDayAvailable,
+        quantityOptions: {
+          sameDay: formData.sameDayOptions.map(opt => ({
+            quantity: parseInt(opt.quantity),
+            unit: opt.unit,
+            SalePrice: parseInt(opt.salePrice),
+            ActualPrice: parseInt(opt.actualPrice),
+            DiscountPercentage: opt.discountPercentage,
+            Available: opt.available,
+          })),
+          nextDay: formData.nextDayOptions.map(opt => ({
+            quantity: parseInt(opt.quantity),
+            unit: opt.unit,
+            SalePrice: parseInt(opt.salePrice),
+            ActualPrice: parseInt(opt.actualPrice),
+            DiscountPercentage: opt.discountPercentage,
+            Available: opt.available,
+          })),
+        },
+      };
+
+      console.log('Submitting:', submitData);
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       Alert.alert(
         'Success',
-        'Product added successfully! It will be visible after admin approval.',
+        'Product added successfully!',
         [
           {
             text: 'OK',
@@ -217,9 +280,18 @@ const AddProduct: React.FC = () => {
       console.error('Error adding product:', error);
       Alert.alert('Error', 'Failed to add product. Please try again.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Loading product details...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -230,356 +302,327 @@ const AddProduct: React.FC = () => {
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add New Product</Text>
+        <Text style={styles.headerTitle}>Add Product Details</Text>
       </View>
 
-      {/* Product Image */}
-      <TouchableOpacity
-        style={styles.imagePicker}
-        onPress={pickImage}
-      >
-        {formData.image ? (
-          <Image source={{ uri: formData.image }} style={styles.imagePreview} />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <MaterialIcons name="add-photo-alternate" size={48} color="#ccc" />
-            <Text style={styles.imagePlaceholderText}>Add Product Image</Text>
-            <Text style={styles.imagePlaceholderSubtext}>Tap to select</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-
-      {/* Basic Information */}
+      {/* Product Info */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Basic Information</Text>
+        <Text style={styles.sectionTitle}>Product Information</Text>
         
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Product Name *</Text>
-          <TextInput
-            style={[styles.input, errors.name && styles.inputError]}
-            placeholder="Enter product name"
-            value={formData.name}
-            onChangeText={(value) => {
-              setFormData(prev => ({ ...prev, name: value }));
-              if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
-            }}
-          />
-          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+        <View style={styles.readOnlyInfo}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Product ID:</Text>
+            <Text style={styles.infoValue}>{formData.productId}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Product Name:</Text>
+            <Text style={styles.infoValue}>{formData.name}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Shop ID:</Text>
+            <Text style={styles.infoValue}>{formData.shopId}</Text>
+          </View>
         </View>
+      </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description *</Text>
-          <TextInput
-            style={[styles.textArea, errors.description && styles.inputError]}
-            placeholder="Enter product description"
-            value={formData.description}
-            onChangeText={(value) => {
-              setFormData(prev => ({ ...prev, description: value }));
-              if (errors.description) setErrors(prev => ({ ...prev, description: '' }));
-            }}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-          {errors.description && (
-            <Text style={styles.errorText}>{errors.description}</Text>
-          )}
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Category</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoryContainer}
-          >
-            {categories.map(category => (
+      {/* Availability Options */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Availability Settings</Text>
+        
+        <View style={styles.availabilitySection}>
+          <Text style={styles.subSectionTitle}>Same Day Delivery</Text>
+          <View style={styles.availabilityButtons}>
+            {availabilityOptions.map(option => (
               <TouchableOpacity
-                key={category.value}
+                key={`same-${option.value}`}
                 style={[
-                  styles.categoryButton,
-                  formData.category === category.value && styles.categoryButtonActive,
+                  styles.availabilityButton,
+                  formData.sameDayAvailable === option.value && {
+                    backgroundColor: option.color + '20',
+                    borderColor: option.color,
+                  },
                 ]}
-                onPress={() => setFormData(prev => ({ ...prev, category: category.value }))}
+                onPress={() => setFormData(prev => ({ 
+                  ...prev, 
+                  sameDayAvailable: option.value as any 
+                }))}
               >
-                <Text
-                  style={[
-                    styles.categoryButtonText,
-                    formData.category === category.value && styles.categoryButtonTextActive,
-                  ]}
-                >
-                  {category.label}
+                <View style={[styles.availabilityDot, { backgroundColor: option.color }]} />
+                <Text style={[
+                  styles.availabilityButtonText,
+                  formData.sameDayAvailable === option.value && {
+                    color: option.color,
+                    fontWeight: '600',
+                  },
+                ]}>
+                  {option.label}
                 </Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         </View>
 
-        {/* Delivery Options */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Delivery Options</Text>
-          <View style={styles.deliveryOptions}>
-            <TouchableOpacity
-              style={[
-                styles.deliveryOption,
-                formData.sameDayDelivery && styles.deliveryOptionActive,
-              ]}
-              onPress={() => setFormData(prev => ({ 
-                ...prev, 
-                sameDayDelivery: !prev.sameDayDelivery 
-              }))}
-            >
-              <MaterialIcons 
-                name="today" 
-                size={20} 
-                color={formData.sameDayDelivery ? '#4CAF50' : '#666'} 
-              />
-              <Text style={[
-                styles.deliveryOptionText,
-                formData.sameDayDelivery && styles.deliveryOptionTextActive,
-              ]}>
-                Same Day
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.deliveryOption,
-                formData.nextDayDelivery && styles.deliveryOptionActive,
-              ]}
-              onPress={() => setFormData(prev => ({ 
-                ...prev, 
-                nextDayDelivery: !prev.nextDayDelivery 
-              }))}
-            >
-              <MaterialIcons 
-                name="date-range" 
-                size={20} 
-                color={formData.nextDayDelivery ? '#4CAF50' : '#666'} 
-              />
-              <Text style={[
-                styles.deliveryOptionText,
-                formData.nextDayDelivery && styles.deliveryOptionTextActive,
-              ]}>
-                Next Day
-              </Text>
-            </TouchableOpacity>
+        <View style={styles.availabilitySection}>
+          <Text style={styles.subSectionTitle}>Next Day Delivery</Text>
+          <View style={styles.availabilityButtons}>
+            {availabilityOptions.map(option => (
+              <TouchableOpacity
+                key={`next-${option.value}`}
+                style={[
+                  styles.availabilityButton,
+                  formData.nextDayAvailable === option.value && {
+                    backgroundColor: option.color + '20',
+                    borderColor: option.color,
+                  },
+                ]}
+                onPress={() => setFormData(prev => ({ 
+                  ...prev, 
+                  nextDayAvailable: option.value as any 
+                }))}
+              >
+                <View style={[styles.availabilityDot, { backgroundColor: option.color }]} />
+                <Text style={[
+                  styles.availabilityButtonText,
+                  formData.nextDayAvailable === option.value && {
+                    color: option.color,
+                    fontWeight: '600',
+                  },
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </View>
 
-      {/* Quantity Types & Pricing */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quantity Types & Pricing</Text>
-        <Text style={styles.sectionDescription}>
-          Add different quantity options with pricing
-        </Text>
-
-        {formData.quantityTypes.map((type, index) => (
-          <View key={index} style={styles.quantityTypeCard}>
-            <View style={styles.quantityTypeHeader}>
-              <Text style={styles.quantityTypeTitle}>
-                Quantity Type {index + 1}
-              </Text>
-              {formData.quantityTypes.length > 1 && (
-                <TouchableOpacity
-                  onPress={() => handleRemoveQuantityType(index)}
-                >
-                  <MaterialIcons name="delete" size={24} color="#f44336" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.quantityTypeForm}>
-              {/* Quantity Type Name */}
-              <View style={styles.formRow}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Type Name *</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      errors[`quantityType_${index}`] && styles.inputError,
-                    ]}
-                    placeholder="e.g., Small Pack, Large Pack"
-                    value={type.type}
-                    onChangeText={(value) =>
-                      handleQuantityTypeChange(index, 'type', value)
-                    }
-                  />
-                  {errors[`quantityType_${index}`] && (
-                    <Text style={styles.errorText}>
-                      {errors[`quantityType_${index}`]}
-                    </Text>
-                  )}
-                </View>
+      {/* Same Day Quantity Options */}
+      {formData.sameDayAvailable !== 'Disabled' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Same Day Quantity Options</Text>
+          
+          {formData.sameDayOptions.map((option, index) => (
+            <View key={`same-${index}`} style={styles.quantityCard}>
+              <View style={styles.quantityHeader}>
+                <Text style={styles.quantityTitle}>Option {index + 1}</Text>
+                {formData.sameDayOptions.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => handleRemoveQuantityOption('sameDay', index)}
+                  >
+                    <MaterialIcons name="delete" size={24} color="#f44336" />
+                  </TouchableOpacity>
+                )}
               </View>
 
-              {/* Quantity and Unit */}
-              <View style={styles.formRow}>
-                <View style={[styles.formGroup, styles.quantityGroup]}>
-                  <Text style={styles.label}>Quantity</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={type.value.toString()}
-                    onChangeText={(value) =>
-                      handleQuantityTypeChange(index, 'value', parseFloat(value) || 0)
-                    }
-                    keyboardType="numeric"
-                    placeholder="e.g., 250"
-                  />
-                </View>
-
-                <View style={[styles.formGroup, styles.unitGroup]}>
-                  <Text style={styles.label}>Unit</Text>
-                  <View style={styles.unitPicker}>
-                    {units.map(unit => (
-                      <TouchableOpacity
-                        key={unit.value}
-                        style={[
-                          styles.unitButton,
-                          type.unit === unit.value && styles.unitButtonActive,
-                        ]}
-                        onPress={() =>
-                          handleQuantityTypeChange(index, 'unit', unit.value)
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.unitButtonText,
-                            type.unit === unit.value && styles.unitButtonTextActive,
-                          ]}
-                        >
-                          {unit.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+              <View style={styles.quantityForm}>
+                <View style={styles.formRow}>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Quantity *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={option.quantity}
+                      onChangeText={(value) => 
+                        handleQuantityOptionChange('sameDay', index, 'quantity', value)
+                      }
+                      keyboardType="numeric"
+                      placeholder="e.g., 1"
+                    />
+                  </View>
+                  
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Unit</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={option.unit}
+                      editable={false}
+                    />
                   </View>
                 </View>
-              </View>
 
-              {/* Pricing */}
-              <View style={styles.pricingSection}>
-                <Text style={styles.pricingTitle}>Pricing</Text>
-                
-                <View style={styles.sameAsNextDayToggle}>
-                  <Text style={styles.toggleLabel}>Same as Next Day</Text>
+                <View style={styles.formRow}>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Actual Price (₹) *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={option.actualPrice}
+                      onChangeText={(value) => 
+                        handleQuantityOptionChange('sameDay', index, 'actualPrice', value)
+                      }
+                      keyboardType="numeric"
+                      placeholder="Original price"
+                    />
+                  </View>
+                  
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Sale Price (₹) *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={option.salePrice}
+                      onChangeText={(value) => 
+                        handleQuantityOptionChange('sameDay', index, 'salePrice', value)
+                      }
+                      keyboardType="numeric"
+                      placeholder="Discounted price"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.discountRow}>
+                  <Text style={styles.label}>Discount:</Text>
+                  <Text style={styles.discountText}>
+                    {option.discountPercentage}% off
+                  </Text>
+                </View>
+
+                <View style={styles.availableToggle}>
+                  <Text style={styles.label}>Available</Text>
                   <Switch
-                    value={type.sameAsNextDay}
-                    onValueChange={(value) =>
-                      handleQuantityTypeChange(index, 'sameAsNextDay', value)
+                    value={option.available}
+                    onValueChange={(value) => 
+                      handleQuantityOptionChange('sameDay', index, 'available', value)
                     }
                     trackColor={{ false: '#ddd', true: '#4CAF50' }}
                   />
                 </View>
+              </View>
+            </View>
+          ))}
 
-                <View style={styles.pricingRow}>
-                  <View style={styles.priceInput}>
-                    <Text style={styles.label}>Same Day Price (₹) *</Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => handleAddQuantityOption('sameDay')}
+          >
+            <Ionicons name="add-circle" size={24} color="#4CAF50" />
+            <Text style={styles.addButtonText}>Add Same Day Option</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Next Day Quantity Options */}
+      {formData.nextDayAvailable !== 'Disabled' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Next Day Quantity Options</Text>
+          
+          {formData.nextDayOptions.map((option, index) => (
+            <View key={`next-${index}`} style={styles.quantityCard}>
+              <View style={styles.quantityHeader}>
+                <Text style={styles.quantityTitle}>Option {index + 1}</Text>
+                {formData.nextDayOptions.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => handleRemoveQuantityOption('nextDay', index)}
+                  >
+                    <MaterialIcons name="delete" size={24} color="#f44336" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.quantityForm}>
+                <View style={styles.formRow}>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Quantity *</Text>
                     <TextInput
-                      style={[
-                        styles.input,
-                        errors[`sameDayPrice_${index}`] && styles.inputError,
-                        type.sameAsNextDay && styles.inputDisabled,
-                      ]}
-                      value={type.sameDayPrice}
-                      onChangeText={(value) =>
-                        handleQuantityTypeChange(index, 'sameDayPrice', value)
+                      style={styles.input}
+                      value={option.quantity}
+                      onChangeText={(value) => 
+                        handleQuantityOptionChange('nextDay', index, 'quantity', value)
                       }
                       keyboardType="numeric"
-                      placeholder="Enter price"
-                      editable={!type.sameAsNextDay}
+                      placeholder="e.g., 5"
                     />
-                    {errors[`sameDayPrice_${index}`] && (
-                      <Text style={styles.errorText}>
-                        {errors[`sameDayPrice_${index}`]}
-                      </Text>
-                    )}
                   </View>
-
-                  <View style={styles.priceInput}>
-                    <Text style={styles.label}>Next Day Price (₹) *</Text>
+                  
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Unit</Text>
                     <TextInput
-                      style={[
-                        styles.input,
-                        errors[`nextDayPrice_${index}`] && styles.inputError,
-                      ]}
-                      value={type.nextDayPrice}
-                      onChangeText={(value) =>
-                        handleQuantityTypeChange(index, 'nextDayPrice', value)
-                      }
-                      keyboardType="numeric"
-                      placeholder="Enter price"
+                      style={styles.input}
+                      value={option.unit}
+                      editable={false}
                     />
-                    {errors[`nextDayPrice_${index}`] && (
-                      <Text style={styles.errorText}>
-                        {errors[`nextDayPrice_${index}`]}
-                      </Text>
-                    )}
                   </View>
                 </View>
 
-                {/* Availability */}
-                <View style={styles.availabilityRow}>
-                  <View style={styles.availabilityToggle}>
-                    <Text style={styles.label}>Same Day Available</Text>
-                    <Switch
-                      value={type.sameDayAvailable}
-                      onValueChange={(value) =>
-                        handleQuantityTypeChange(index, 'sameDayAvailable', value)
+                <View style={styles.formRow}>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Actual Price (₹) *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={option.actualPrice}
+                      onChangeText={(value) => 
+                        handleQuantityOptionChange('nextDay', index, 'actualPrice', value)
                       }
-                      trackColor={{ false: '#ddd', true: '#4CAF50' }}
-                      disabled={type.sameAsNextDay}
+                      keyboardType="numeric"
+                      placeholder="Original price"
                     />
                   </View>
+                  
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Sale Price (₹) *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={option.salePrice}
+                      onChangeText={(value) => 
+                        handleQuantityOptionChange('nextDay', index, 'salePrice', value)
+                      }
+                      keyboardType="numeric"
+                      placeholder="Discounted price"
+                    />
+                  </View>
+                </View>
 
-                  <View style={styles.availabilityToggle}>
-                    <Text style={styles.label}>Next Day Available</Text>
-                    <Switch
-                      value={type.nextDayAvailable}
-                      onValueChange={(value) =>
-                        handleQuantityTypeChange(index, 'nextDayAvailable', value)
-                      }
-                      trackColor={{ false: '#ddd', true: '#4CAF50' }}
-                    />
-                  </View>
+                <View style={styles.discountRow}>
+                  <Text style={styles.label}>Discount:</Text>
+                  <Text style={styles.discountText}>
+                    {option.discountPercentage}% off
+                  </Text>
+                </View>
+
+                <View style={styles.availableToggle}>
+                  <Text style={styles.label}>Available</Text>
+                  <Switch
+                    value={option.available}
+                    onValueChange={(value) => 
+                      handleQuantityOptionChange('nextDay', index, 'available', value)
+                    }
+                    trackColor={{ false: '#ddd', true: '#4CAF50' }}
+                  />
                 </View>
               </View>
             </View>
-          </View>
-        ))}
+          ))}
 
-        <TouchableOpacity
-          style={styles.addQuantityButton}
-          onPress={handleAddQuantityType}
-        >
-          <Ionicons name="add-circle" size={24} color="#4CAF50" />
-          <Text style={styles.addQuantityText}>Add Another Quantity Type</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => handleAddQuantityOption('nextDay')}
+          >
+            <Ionicons name="add-circle" size={24} color="#4CAF50" />
+            <Text style={styles.addButtonText}>Add Next Day Option</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Submit Button */}
       <TouchableOpacity
-        style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+        style={[styles.submitButton, saving && styles.submitButtonDisabled]}
         onPress={handleSubmit}
-        disabled={loading}
+        disabled={saving}
       >
-        {loading ? (
-          <Ionicons name="refresh" size={24} color="#fff" />
+        {saving ? (
+          <ActivityIndicator color="#fff" size="small" />
         ) : (
           <>
-            <MaterialIcons name="add-circle" size={24} color="#fff" />
-            <Text style={styles.submitButtonText}>Add Product for Approval</Text>
+            <Ionicons name="checkmark-circle" size={24} color="#fff" />
+            <Text style={styles.submitButtonText}>Add Product</Text>
           </>
         )}
       </TouchableOpacity>
 
       {/* Help Text */}
       <View style={styles.helpSection}>
-        <MaterialIcons name="info" size={20} color="#666" />
+        <Ionicons name="information-circle" size={20} color="#666" />
         <Text style={styles.helpText}>
-          • Products require admin approval before appearing in the store{'\n'}
-          • Make sure all information is accurate before submission{'\n'}
-          • You can edit products after approval from "My List"
+          • Add different quantity options with pricing for same day and next day delivery{'\n'}
+          • Discount percentage is automatically calculated{'\n'}
+          • You can disable entire delivery type if not offering it
         </Text>
       </View>
     </ScrollView>
@@ -590,6 +633,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
   },
   header: {
     flexDirection: 'row',
@@ -608,154 +662,73 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 12,
   },
-  imagePicker: {
-    backgroundColor: '#fff',
-    margin: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  imagePreview: {
-    width: '100%',
-    height: 200,
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-  },
-  imagePlaceholderText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 12,
-  },
-  imagePlaceholderSubtext: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
   section: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
     margin: 16,
     marginTop: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: '#666',
     marginBottom: 16,
   },
-  inputGroup: {
-    marginBottom: 16,
+  readOnlyInfo: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 16,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+  infoRow: {
+    flexDirection: 'row',
     marginBottom: 8,
   },
-  input: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#333',
-  },
-  inputError: {
-    borderColor: '#f44336',
-    backgroundColor: '#fff5f5',
-  },
-  textArea: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#333',
-    minHeight: 100,
-  },
-  errorText: {
-    color: '#f44336',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    marginTop: 8,
-  },
-  categoryButton: {
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  categoryButtonActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  categoryButtonText: {
+  infoLabel: {
     fontSize: 14,
-    color: '#666',
-  },
-  categoryButtonTextActive: {
-    color: '#fff',
     fontWeight: '600',
+    color: '#666',
+    width: 100,
   },
-  deliveryOptions: {
+  infoValue: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+  },
+  availabilitySection: {
+    marginBottom: 20,
+  },
+  subSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  availabilityButtons: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: 8,
   },
-  deliveryOption: {
+  availabilityButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    justifyContent: 'center',
+    padding: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#ddd',
     gap: 8,
   },
-  deliveryOptionActive: {
-    backgroundColor: '#e8f5e9',
-    borderColor: '#4CAF50',
+  availabilityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  deliveryOptionText: {
+  availabilityButtonText: {
     fontSize: 14,
     color: '#666',
   },
-  deliveryOptionTextActive: {
-    color: '#2e7d32',
-    fontWeight: '600',
-  },
-  quantityTypeCard: {
+  quantityCard: {
     backgroundColor: '#f9f9f9',
     borderRadius: 8,
     padding: 16,
@@ -763,7 +736,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  quantityTypeHeader: {
+  quantityHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -772,12 +745,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  quantityTypeTitle: {
+  quantityTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
-  quantityTypeForm: {
+  quantityForm: {
     gap: 12,
   },
   formRow: {
@@ -787,89 +760,44 @@ const styles = StyleSheet.create({
   formGroup: {
     flex: 1,
   },
-  quantityGroup: {
-    flex: 1,
-  },
-  unitGroup: {
-    flex: 2,
-  },
-  unitPicker: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  unitButton: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  unitButtonActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  unitButtonText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  unitButtonTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  pricingSection: {
-    marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  pricingTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  sameAsNextDayToggle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  toggleLabel: {
+  label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 6,
   },
-  pricingRow: {
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#333',
+  },
+  discountRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  priceInput: {
-    flex: 1,
-  },
-  inputDisabled: {
-    backgroundColor: '#eee',
-    color: '#999',
-  },
-  availabilityRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  availabilityToggle: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 6,
+  },
+  discountText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2e7d32',
+  },
+  availableToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#f0f0f0',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
   },
-  addQuantityButton: {
+  addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -881,7 +809,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     gap: 8,
   },
-  addQuantityText: {
+  addButtonText: {
     color: '#4CAF50',
     fontSize: 16,
     fontWeight: '600',
@@ -895,11 +823,6 @@ const styles = StyleSheet.create({
     margin: 16,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   submitButtonDisabled: {
     backgroundColor: '#81c784',
@@ -916,6 +839,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e8f5e9',
     padding: 16,
     margin: 16,
+    marginTop: 0,
     borderRadius: 8,
     gap: 8,
   },

@@ -1,4 +1,4 @@
-// AddProduct.tsx
+// AddProduct.tsx (UPDATED WITH unitOptions)
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -18,15 +18,21 @@ import * as ImagePicker from 'expo-image-picker';
 import { useProductContext } from './product-context';
 import Checkbox from 'expo-checkbox';
 
-// Interface for form data
+// Interface for form data - UPDATED
 interface ProductFormData {
   name: string;
   description: string;
+  price: string;
   units: string[];
+  unitOptions: string[];
   category: string;
   subCategory: string;
+  quantity: string;
   image: string | null;
+  sameDayAvailable: boolean;
+  nextDayAvailable: boolean;
   customUnit: string;
+  customUnitOption: string;
   customCategory: string;
   customSubCategory: string;
 }
@@ -38,23 +44,30 @@ const AddProduct = () => {
   // Get context functions
   const { addProduct, checkProductExists } = useProductContext();
 
-  // State for product form data
+  // State for product form data - UPDATED
   const [productData, setProductData] = useState<ProductFormData>({
     name: '',
     description: '',
+    price: '',
     units: [],
+    unitOptions: [],
     category: '',
     subCategory: '',
+    quantity: '0',
     image: null,
+    sameDayAvailable: true,
+    nextDayAvailable: true,
     customUnit: '',
+    customUnitOption: '',
     customCategory: '',
     customSubCategory: '',
   });
 
-  // State for modal visibility
+  // State for modal visibility - ADDED unitOptionsModalVisible
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [subCategoryModalVisible, setSubCategoryModalVisible] = useState(false);
   const [unitsModalVisible, setUnitsModalVisible] = useState(false);
+  const [unitOptionsModalVisible, setUnitOptionsModalVisible] = useState(false); // NEW
   
   // State for loading
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,11 +76,13 @@ const AddProduct = () => {
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
   const [showCustomSubCategoryInput, setShowCustomSubCategoryInput] = useState(false);
   const [showCustomUnitInput, setShowCustomUnitInput] = useState(false);
+  const [showCustomUnitOptionInput, setShowCustomUnitOptionInput] = useState(false); // NEW
 
   // State for search in modals
   const [categorySearch, setCategorySearch] = useState('');
   const [subCategorySearch, setSubCategorySearch] = useState('');
   const [unitSearch, setUnitSearch] = useState('');
+  const [unitOptionSearch, setUnitOptionSearch] = useState(''); // NEW
 
   // Predefined categories
   const predefinedCategories: string[] = [
@@ -247,6 +262,17 @@ const AddProduct = () => {
     'packets'
   ];
 
+  // Predefined unit options - NEW
+  const predefinedUnitOptions: string[] = [
+    '750',
+    '500',
+    '250',
+    '200',
+    '100',
+    '50',
+    '1'
+  ];
+
   // Function to pick image from gallery
   const pickImage = async (): Promise<void> => {
     try {
@@ -289,6 +315,20 @@ const AddProduct = () => {
     setProductData({ ...productData, units: updatedUnits });
   };
 
+  // Function to toggle unit option selection - NEW
+  const handleUnitOptionToggle = (unitOption: string): void => {
+    const updatedUnitOptions = [...productData.unitOptions];
+    if (updatedUnitOptions.includes(unitOption)) {
+      // Remove unit option if already selected
+      const index = updatedUnitOptions.indexOf(unitOption);
+      updatedUnitOptions.splice(index, 1);
+    } else {
+      // Add unit option if not selected
+      updatedUnitOptions.push(unitOption);
+    }
+    setProductData({ ...productData, unitOptions: updatedUnitOptions });
+  };
+
   // Function to add custom unit
   const handleAddCustomUnit = (): void => {
     if (productData.customUnit.trim()) {
@@ -302,6 +342,23 @@ const AddProduct = () => {
         });
         setShowCustomUnitInput(false);
         setUnitSearch('');
+      }
+    }
+  };
+
+  // Function to add custom unit option - NEW
+  const handleAddCustomUnitOption = (): void => {
+    if (productData.customUnitOption.trim()) {
+      const customUnitOption = productData.customUnitOption.trim();
+      if (!productData.unitOptions.includes(customUnitOption)) {
+        const updatedUnitOptions = [...productData.unitOptions, customUnitOption];
+        setProductData({ 
+          ...productData, 
+          unitOptions: updatedUnitOptions,
+          customUnitOption: '' 
+        });
+        setShowCustomUnitOptionInput(false);
+        setUnitOptionSearch('');
       }
     }
   };
@@ -336,7 +393,7 @@ const AddProduct = () => {
     }
   };
 
-  // Function to save product
+  // Function to save product - UPDATED
   const handleSave = (): void => {
     // Prevent multiple submissions
     if (isSubmitting) return;
@@ -344,9 +401,25 @@ const AddProduct = () => {
     setIsSubmitting(true);
 
     try {
-      // Validate required fields
-      if (!productData.name || !productData.category || productData.units.length === 0) {
+      // Validate required fields - UPDATED
+      if (!productData.name || !productData.category || productData.units.length === 0 || !productData.price || !productData.quantity) {
         Alert.alert('Error', 'Please fill in all required fields (*)');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate price is a valid number
+      const priceNum = parseFloat(productData.price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        Alert.alert('Error', 'Please enter a valid price');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate quantity is a valid number
+      const quantityNum = parseInt(productData.quantity);
+      if (isNaN(quantityNum) || quantityNum < 0) {
+        Alert.alert('Error', 'Please enter a valid quantity');
         setIsSubmitting(false);
         return;
       }
@@ -359,18 +432,19 @@ const AddProduct = () => {
         return;
       }
 
-      // Prepare product data
+      // Prepare product data - UPDATED
       const productToSave = {
         name: productData.name.trim(),
         description: productData.description.trim(),
-        price: '0', // Default price
+        price: productData.price,
         category: productData.category,
         subCategory: productData.subCategory || '',
-        quantity: 0, // Default quantity
+        quantity: quantityNum,
         image: productData.image || '',
         units: productData.units,
-        sameDayAvailable: true,
-        nextDayAvailable: true
+        unitOptions: productData.unitOptions.length > 0 ? productData.unitOptions : ['1'], // Default to ['1'] if empty
+        sameDayAvailable: productData.sameDayAvailable,
+        nextDayAvailable: productData.nextDayAvailable
       };
 
       // Add product using context
@@ -457,6 +531,12 @@ const AddProduct = () => {
     setProductData({ ...productData, units: updatedUnits });
   };
 
+  // Function to remove unit option - NEW
+  const removeUnitOption = (unitOption: string): void => {
+    const updatedUnitOptions = productData.unitOptions.filter(u => u !== unitOption);
+    setProductData({ ...productData, unitOptions: updatedUnitOptions });
+  };
+
   // Function to filter categories
   const getFilteredCategories = (): string[] => {
     if (!categorySearch.trim()) return predefinedCategories;
@@ -475,17 +555,29 @@ const AddProduct = () => {
     );
   };
 
-  // Function to close all modals
+  // Function to filter unit options - NEW
+  const getFilteredUnitOptions = (): string[] => {
+    if (!unitOptionSearch.trim()) return predefinedUnitOptions;
+    
+    return predefinedUnitOptions.filter(item =>
+      item.toLowerCase().includes(unitOptionSearch.toLowerCase())
+    );
+  };
+
+  // Function to close all modals - UPDATED
   const closeAllModals = (): void => {
     setCategoryModalVisible(false);
     setSubCategoryModalVisible(false);
     setUnitsModalVisible(false);
+    setUnitOptionsModalVisible(false); // NEW
     setCategorySearch('');
     setSubCategorySearch('');
     setUnitSearch('');
+    setUnitOptionSearch(''); // NEW
     setShowCustomCategoryInput(false);
     setShowCustomSubCategoryInput(false);
     setShowCustomUnitInput(false);
+    setShowCustomUnitOptionInput(false); // NEW
   };
 
   // Render component
@@ -557,6 +649,32 @@ const AddProduct = () => {
           />
         </View>
 
+        {/* Price */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Price (₹) *</Text>
+          <TextInput
+            style={styles.input}
+            value={productData.price}
+            onChangeText={(text) => setProductData({ ...productData, price: text })}
+            placeholder="Enter price"
+            placeholderTextColor="#95a5a6"
+            keyboardType="numeric"
+          />
+        </View>
+
+        {/* Quantity */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Quantity *</Text>
+          <TextInput
+            style={styles.input}
+            value={productData.quantity}
+            onChangeText={(text) => setProductData({ ...productData, quantity: text })}
+            placeholder="Enter quantity"
+            placeholderTextColor="#95a5a6"
+            keyboardType="numeric"
+          />
+        </View>
+
         {/* Units */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Units *</Text>
@@ -581,6 +699,42 @@ const AddProduct = () => {
                     <Text style={styles.unitChipText}>{unit}</Text>
                     <TouchableOpacity 
                       onPress={() => removeUnit(unit)}
+                      style={styles.removeUnitButton}
+                    >
+                      <Text style={styles.removeUnitText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Unit Options - NEW */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Unit Options (Optional)</Text>
+          <Text style={styles.subLabel}>e.g., 750ml, 500g, etc.</Text>
+          <TouchableOpacity 
+            style={styles.input} 
+            onPress={() => setUnitOptionsModalVisible(true)}
+          >
+            <Text style={productData.unitOptions.length > 0 ? styles.selectedText : styles.placeholderText}>
+              {productData.unitOptions.length > 0 
+                ? `Selected: ${productData.unitOptions.join(', ')}` 
+                : 'Select Unit Options'}
+            </Text>
+          </TouchableOpacity>
+          
+          {/* Selected Unit Options Display */}
+          {productData.unitOptions.length > 0 && (
+            <View style={styles.selectedUnitsContainer}>
+              <Text style={styles.selectedUnitsLabel}>Selected Unit Options:</Text>
+              <View style={styles.unitsChips}>
+                {productData.unitOptions.map((unitOption, index) => (
+                  <View key={index} style={styles.unitChip}>
+                    <Text style={styles.unitChipText}>{unitOption}</Text>
+                    <TouchableOpacity 
+                      onPress={() => removeUnitOption(unitOption)}
                       style={styles.removeUnitButton}
                     >
                       <Text style={styles.removeUnitText}>✕</Text>
@@ -625,6 +779,29 @@ const AddProduct = () => {
               Please select a category first
             </Text>
           )}
+        </View>
+
+        {/* Delivery Options */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Delivery Options</Text>
+          <View style={styles.checkboxContainer}>
+            <View style={styles.checkboxRow}>
+              <Checkbox
+                value={productData.sameDayAvailable}
+                onValueChange={(value) => setProductData({ ...productData, sameDayAvailable: value })}
+                color={productData.sameDayAvailable ? '#27ae60' : undefined}
+              />
+              <Text style={styles.checkboxLabel}>Same Day Delivery Available</Text>
+            </View>
+            <View style={styles.checkboxRow}>
+              <Checkbox
+                value={productData.nextDayAvailable}
+                onValueChange={(value) => setProductData({ ...productData, nextDayAvailable: value })}
+                color={productData.nextDayAvailable ? '#27ae60' : undefined}
+              />
+              <Text style={styles.checkboxLabel}>Next Day Delivery Available</Text>
+            </View>
+          </View>
         </View>
 
         {/* Save Button */}
@@ -723,6 +900,100 @@ const AddProduct = () => {
                         onPress={() => setShowCustomUnitInput(true)}
                       >
                         <Text style={styles.addCustomButtonText}>+ Add Custom Unit</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              />
+              
+              {/* Done Button */}
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={closeAllModals}
+              >
+                <Text style={styles.modalCloseButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Unit Options Modal - NEW */}
+      <Modal
+        visible={unitOptionsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeAllModals}
+      >
+        <SafeAreaView style={styles.modalOuterContainer}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Unit Options (Multiple)</Text>
+              <Text style={styles.modalSubtitle}>e.g., 750, 500, 250, etc.</Text>
+              
+              {/* Search Input */}
+              <View style={styles.modalSearchContainer}>
+                <TextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Search unit options..."
+                  placeholderTextColor="#95a5a6"
+                  value={unitOptionSearch}
+                  onChangeText={setUnitOptionSearch}
+                />
+              </View>
+              
+              {/* Unit Options List */}
+              <FlatList
+                data={getFilteredUnitOptions()}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <View style={styles.modalItemWithCheckbox}>
+                    <Checkbox
+                      value={productData.unitOptions.includes(item)}
+                      onValueChange={() => handleUnitOptionToggle(item)}
+                      color={productData.unitOptions.includes(item) ? '#27ae60' : undefined}
+                    />
+                    <Text style={styles.modalItemText}>{item}</Text>
+                  </View>
+                )}
+                ListFooterComponent={() => (
+                  <View>
+                    {/* Custom Unit Option Input */}
+                    {showCustomUnitOptionInput ? (
+                      <View style={styles.customInputContainer}>
+                        <TextInput
+                          style={styles.customInput}
+                          value={productData.customUnitOption}
+                          onChangeText={(text) => setProductData({ ...productData, customUnitOption: text })}
+                          placeholder="Enter custom unit option (e.g., 300)"
+                          placeholderTextColor="#95a5a6"
+                          autoFocus
+                          keyboardType="numeric"
+                        />
+                        <View style={styles.customInputButtons}>
+                          <TouchableOpacity 
+                            style={styles.customInputButton}
+                            onPress={handleAddCustomUnitOption}
+                          >
+                            <Text style={styles.customInputButtonText}>Add</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.customInputButton, styles.customInputButtonCancel]}
+                            onPress={() => {
+                              setShowCustomUnitOptionInput(false);
+                              setUnitOptionSearch('');
+                            }}
+                          >
+                            <Text style={styles.customInputButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addCustomButton}
+                        onPress={() => setShowCustomUnitOptionInput(true)}
+                      >
+                        <Text style={styles.addCustomButtonText}>+ Add Custom Unit Option</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -970,6 +1241,12 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     marginBottom: 8,
   },
+  subLabel: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -1123,9 +1400,15 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 10,
     textAlign: 'center',
     color: '#2c3e50',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 15,
+    textAlign: 'center',
   },
   modalSearchContainer: {
     marginBottom: 15,
@@ -1214,6 +1497,23 @@ const styles = StyleSheet.create({
     color: '#3498db',
     fontSize: 16,
     fontWeight: '600',
+  },
+  checkboxContainer: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 16,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#2c3e50',
   },
 });
 

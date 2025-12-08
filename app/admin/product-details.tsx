@@ -1,4 +1,4 @@
-// ProductDetail.tsx
+// ProductDetail.tsx (UPDATED WITH unitOptions)
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
@@ -21,6 +21,8 @@ const ProductDetail: React.FC = () => {
   
   const [product, setProduct] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
+  const [selectedUnit, setSelectedUnit] = useState<string>(''); // NEW
+  const [selectedUnitOption, setSelectedUnitOption] = useState<string>(''); // NEW
 
   useEffect(() => {
     // Get product from context using ID
@@ -29,6 +31,13 @@ const ProductDetail: React.FC = () => {
       const foundProduct = products.find(p => p.id === productId);
       if (foundProduct) {
         setProduct(foundProduct);
+        // Set default selections
+        if (foundProduct.units && foundProduct.units.length > 0) {
+          setSelectedUnit(foundProduct.units[0]);
+        }
+        if (foundProduct.unitOptions && foundProduct.unitOptions.length > 0) {
+          setSelectedUnitOption(foundProduct.unitOptions[0]);
+        }
       } else {
         // If product not found, show error
         setProduct({
@@ -38,7 +47,10 @@ const ProductDetail: React.FC = () => {
           image: 'https://via.placeholder.com/150/FF6B6B/FFFFFF?text=Error',
           description: 'Product information could not be loaded',
           category: 'error',
-          units: ['N/A']
+          units: ['N/A'],
+          unitOptions: ['N/A'],
+          sameDayAvailable: false,
+          nextDayAvailable: false,
         });
       }
     }
@@ -56,9 +68,13 @@ const ProductDetail: React.FC = () => {
 
   const handleAddToCart = () => {
     // You can integrate with your cartStore here
+    const unitDisplay = selectedUnitOption && selectedUnitOption !== '1' 
+      ? `${selectedUnitOption}${selectedUnit}`
+      : selectedUnit;
+    
     Alert.alert(
       'Added to Cart',
-      `${quantity} ${product.units?.[0] || 'item'} of ${product.name} added to cart!`,
+      `${quantity} ${unitDisplay || 'item'} of ${product.name} added to cart!`,
       [
         { 
           text: 'Continue Shopping', 
@@ -76,6 +92,14 @@ const ProductDetail: React.FC = () => {
   const decreaseQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1);
 
   const price = parseFloat(product.price) || 0;
+  
+  // Get units as array
+  const unitsArray = Array.isArray(product.units) ? product.units : 
+    (typeof product.units === 'string' ? product.units.split(',').map((u: string) => u.trim()) : []);
+  
+  // Get unit options as array
+  const unitOptionsArray = Array.isArray(product.unitOptions) ? product.unitOptions : 
+    (typeof product.unitOptions === 'string' ? product.unitOptions.split(',').map((u: string) => u.trim()) : ['1']);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -96,9 +120,67 @@ const ProductDetail: React.FC = () => {
           
           <Text style={styles.productName}>{product.name}</Text>
           <Text style={styles.productPrice}>₹{price.toFixed(2)}</Text>
-          <Text style={styles.productUnit}>
-            {product.units && product.units.length > 0 ? product.units.join(', ') : 'N/A'}
-          </Text>
+          
+          {/* Unit Selection - NEW */}
+          <View style={styles.unitSelectionContainer}>
+            <Text style={styles.unitSelectionLabel}>Select Unit:</Text>
+            <View style={styles.unitOptions}>
+              {unitsArray.map((unit: string, index: number) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.unitOption,
+                    selectedUnit === unit && styles.selectedUnitOption
+                  ]}
+                  onPress={() => setSelectedUnit(unit)}
+                >
+                  <Text style={[
+                    styles.unitOptionText,
+                    selectedUnit === unit && styles.selectedUnitOptionText
+                  ]}>
+                    {unit}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          
+          {/* Unit Option Selection - NEW */}
+          {unitOptionsArray.length > 1 && (
+            <View style={styles.unitOptionSelectionContainer}>
+              <Text style={styles.unitSelectionLabel}>Select Size:</Text>
+              <View style={styles.unitOptions}>
+                {unitOptionsArray.map((option: string, index: number) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.unitOption,
+                      selectedUnitOption === option && styles.selectedUnitOption
+                    ]}
+                    onPress={() => setSelectedUnitOption(option)}
+                  >
+                    <Text style={[
+                      styles.unitOptionText,
+                      selectedUnitOption === option && styles.selectedUnitOptionText
+                    ]}>
+                      {option === '1' ? 'Regular' : option}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+          
+          {/* Display selected combination */}
+          {selectedUnit && (
+            <View style={styles.selectedCombination}>
+              <Text style={styles.selectedCombinationText}>
+                Selected: {selectedUnitOption && selectedUnitOption !== '1' 
+                  ? `${selectedUnitOption} ${selectedUnit}` 
+                  : selectedUnit}
+              </Text>
+            </View>
+          )}
           
           <Text style={styles.descriptionTitle}>Description</Text>
           <Text style={styles.productDescription}>
@@ -119,15 +201,33 @@ const ProductDetail: React.FC = () => {
               <Text style={styles.detailValue}>{product.quantity || 0}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Same Day Delivery:</Text>
+              <Text style={styles.detailLabel}>Available Units:</Text>
               <Text style={styles.detailValue}>
-                {product.sameDayAvailable ? 'Yes' : 'No'}
+                {unitsArray.join(', ') || 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Available Sizes:</Text>
+              <Text style={styles.detailValue}>
+                {unitOptionsArray.map(opt => opt === '1' ? 'Regular' : opt).join(', ') || 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Same Day Delivery:</Text>
+              <Text style={[
+                styles.detailValue,
+                product.sameDayAvailable ? styles.availableText : styles.notAvailableText
+              ]}>
+                {product.sameDayAvailable ? 'Available' : 'Not Available'}
               </Text>
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Next Day Delivery:</Text>
-              <Text style={styles.detailValue}>
-                {product.nextDayAvailable ? 'Yes' : 'No'}
+              <Text style={[
+                styles.detailValue,
+                product.nextDayAvailable ? styles.availableText : styles.notAvailableText
+              ]}>
+                {product.nextDayAvailable ? 'Available' : 'Not Available'}
               </Text>
             </View>
           </View>
@@ -158,8 +258,17 @@ const ProductDetail: React.FC = () => {
             </Text>
           </View>
           
-          <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-            <Text style={styles.addToCartText}>Add to Cart</Text>
+          <TouchableOpacity 
+            style={[
+              styles.addToCartButton,
+              (!selectedUnit || (selectedUnitOption && selectedUnitOption !== '1' && !selectedUnit)) && styles.disabledButton
+            ]} 
+            onPress={handleAddToCart}
+            disabled={!selectedUnit || (selectedUnitOption && selectedUnitOption !== '1' && !selectedUnit)}
+          >
+            <Text style={styles.addToCartText}>
+              {!selectedUnit ? 'Select a Unit First' : 'Add to Cart'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -213,12 +322,58 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#e74c3c',
-    marginBottom: 4,
-  },
-  productUnit: {
-    fontSize: 16,
-    color: '#7f8c8d',
     marginBottom: 20,
+  },
+  unitSelectionContainer: {
+    marginBottom: 15,
+  },
+  unitOptionSelectionContainer: {
+    marginBottom: 15,
+  },
+  unitSelectionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 10,
+  },
+  unitOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  unitOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#ecf0f1',
+    borderWidth: 1,
+    borderColor: '#bdc3c7',
+  },
+  selectedUnitOption: {
+    backgroundColor: '#3498db',
+    borderColor: '#2980b9',
+  },
+  unitOptionText: {
+    fontSize: 14,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  selectedUnitOptionText: {
+    color: 'white',
+  },
+  selectedCombination: {
+    backgroundColor: '#e8f4fc',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#3498db',
+  },
+  selectedCombinationText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   descriptionTitle: {
     fontSize: 18,
@@ -262,6 +417,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2c3e50',
     fontWeight: '600',
+  },
+  availableText: {
+    color: '#27ae60',
+    fontWeight: 'bold',
+  },
+  notAvailableText: {
+    color: '#e74c3c',
+    fontWeight: 'bold',
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -336,6 +499,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  disabledButton: {
+    backgroundColor: '#95a5a6',
+    opacity: 0.7,
   },
   addToCartText: {
     color: 'white',
