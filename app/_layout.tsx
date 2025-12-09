@@ -95,7 +95,12 @@ export default function RootLayout() {
             <Stack.Screen name="shopkeeper/shopkeeper-login" options={{ headerShown: false }} />
             
             {/* Shopkeeper Dashboard */}
-            <Stack.Screen name="shopkeeper/shopkeeper-dashboard" options={{ headerShown: false }} />
+            <Stack.Screen 
+              name="shopkeeper/dashboard" 
+              options={{ 
+                headerShown: false 
+              }} 
+            />
             
             {/* =============================== */}
             {/* SHOPKEEPER PRODUCTS SECTION */}
@@ -189,6 +194,26 @@ export default function RootLayout() {
               }} 
             />
             
+            {/* Today's Orders - Filtered view for today */}
+            <Stack.Screen 
+              name="shopkeeper/orders/todays-orders" 
+              options={{ 
+                headerShown: true, 
+                title: "Today's Orders",
+                headerBackTitle: 'Orders'
+              }} 
+            />
+            
+            {/* Pending Orders - Filtered view for pending orders */}
+            <Stack.Screen 
+              name="shopkeeper/orders/pending-orders" 
+              options={{ 
+                headerShown: true, 
+                title: 'Pending Orders',
+                headerBackTitle: 'Orders'
+              }} 
+            />
+            
             {/* =============================== */}
             {/* SHOPKEEPER BANNERS SECTION */}
             {/* =============================== */}
@@ -231,12 +256,22 @@ export default function RootLayout() {
             {/* SHOPKEEPER REPORTS SECTION */}
             {/* =============================== */}
             
-            {/* Quantity Report */}
+            {/* Reports Main Screen */}
             <Stack.Screen 
-              name="shopkeeper/reports/quantity-report" 
+              name="shopkeeper/reports/reports-main" 
               options={{ 
                 headerShown: true, 
-                title: 'Quantity Report',
+                title: 'Reports & Analytics',
+                headerBackTitle: 'Dashboard'
+              }} 
+            />
+            
+            {/* Stock Report */}
+            <Stack.Screen 
+              name="shopkeeper/reports/stock-report" 
+              options={{ 
+                headerShown: true, 
+                title: 'Stock Report',
                 headerBackTitle: 'Reports'
               }} 
             />
@@ -247,6 +282,26 @@ export default function RootLayout() {
               options={{ 
                 headerShown: true, 
                 title: 'Sales Report',
+                headerBackTitle: 'Reports'
+              }} 
+            />
+            
+            {/* Order Analytics Report */}
+            <Stack.Screen 
+              name="shopkeeper/reports/order-analytics" 
+              options={{ 
+                headerShown: true, 
+                title: 'Order Analytics',
+                headerBackTitle: 'Reports'
+              }} 
+            />
+            
+            {/* Quantity Report */}
+            <Stack.Screen 
+              name="shopkeeper/reports/quantity-report" 
+              options={{ 
+                headerShown: true, 
+                title: 'Quantity Report',
                 headerBackTitle: 'Reports'
               }} 
             />
@@ -301,7 +356,7 @@ export default function RootLayout() {
               options={{ 
                 headerShown: true, 
                 title: 'Change Password',
-                headerBackTitle: 'Shop Settings'
+                headerBackTitle: 'Settings'
               }} 
             />
             
@@ -311,7 +366,7 @@ export default function RootLayout() {
               options={{ 
                 headerShown: true, 
                 title: 'Privacy Policy',
-                headerBackTitle: 'Shop Settings'
+                headerBackTitle: 'Settings'
               }} 
             />
             
@@ -321,7 +376,7 @@ export default function RootLayout() {
               options={{ 
                 headerShown: true, 
                 title: 'Terms & Conditions',
-                headerBackTitle: 'Shop Settings'
+                headerBackTitle: 'Settings'
               }} 
             />
             
@@ -359,6 +414,64 @@ export default function RootLayout() {
               }} 
             />
             
+            {/* Notifications */}
+            <Stack.Screen 
+              name="shopkeeper/notifications" 
+              options={{ 
+                headerShown: true, 
+                title: 'Notifications',
+                headerBackTitle: 'Dashboard'
+              }} 
+            />
+            
+            {/* Customers */}
+            <Stack.Screen 
+              name="shopkeeper/customers/customers-list" 
+              options={{ 
+                headerShown: true, 
+                title: 'Customers',
+                headerBackTitle: 'Dashboard'
+              }} 
+            />
+            
+            {/* =============================== */}
+            {/* SHOPKEEPER CATEGORIES SECTION */}
+            {/* =============================== */}
+            
+            {/* Categories Management */}
+            <Stack.Screen 
+              name="shopkeeper/categories/categories-list" 
+              options={{ 
+                headerShown: true, 
+                title: 'Categories',
+                headerBackTitle: 'Dashboard'
+              }} 
+            />
+            
+            {/* Add Category */}
+            <Stack.Screen 
+              name="shopkeeper/categories/add-category" 
+              options={{ 
+                headerShown: true, 
+                title: 'Add Category',
+                headerBackTitle: 'Categories'
+              }} 
+            />
+            
+            {/* =============================== */}
+            {/* SHOPKEEPER INVENTORY SECTION */}
+            {/* =============================== */}
+            
+            {/* Inventory Management */}
+            <Stack.Screen 
+              name="shopkeeper/inventory/inventory-management" 
+              options={{ 
+                headerShown: true, 
+                title: 'Inventory',
+                headerBackTitle: 'Dashboard'
+              }} 
+            />
+            
             {/* =============================== */}
             {/* STORES / CONTEXTS (Hidden Screens) */}
             {/* =============================== */}
@@ -369,15 +482,31 @@ export default function RootLayout() {
             {/* Product Context */}
             <Stack.Screen name="admin/product-context" options={{ headerShown: false }} />
             
+            {/* Shopkeeper Context */}
+            <Stack.Screen name="shopkeeper/shopkeeper-context" options={{ headerShown: false }} />
+            
+            {/* Orders Context/Store */}
+            <Stack.Screen name="shopkeeper/orders/orders-store" options={{ headerShown: false }} />
+            <Stack.Screen name="shopkeeper/orders/orders-context" options={{ headerShown: false }} />
+            
             {/* Cart Store */}
             <Stack.Screen name="cartStore" options={{ headerShown: false }} />
             <Stack.Screen name="admin/cartStore" options={{ headerShown: false }} />
+            <Stack.Screen name="shopkeeper/cartStore" options={{ headerShown: false }} />
             
             {/* Product Store */}
             <Stack.Screen name="admin/productStore" options={{ headerShown: false }} />
+            <Stack.Screen name="shopkeeper/productStore" options={{ headerShown: false }} />
             
             {/* Cart Storage Utility */}
             <Stack.Screen name="utils/cartStorage" options={{ headerShown: false }} />
+            
+            {/* Async Storage Utility */}
+            <Stack.Screen name="utils/asyncStorage" options={{ headerShown: false }} />
+
+            {/* Orders Types & Utilities */}
+            <Stack.Screen name="shopkeeper/orders/orders-types" options={{ headerShown: false }} />
+            <Stack.Screen name="shopkeeper/orders/orders-utils" options={{ headerShown: false }} />
 
           </Stack>
           

@@ -8,6 +8,10 @@ import {
   TextInput,
   Switch,
   Alert,
+  Image,
+  ActivityIndicator,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,12 +28,21 @@ interface DeliverySettings {
   deliveryTypes: string[];
   sameDayDeliverySlots: string[];
   nextDayDeliverySlots: string[];
+  banners: string[];
+  updatedAt?: string;
 }
 
 // Define the delivery slot interface
 interface DeliverySlot {
   label: string;
   value: string;
+}
+
+// Define the banner interface
+interface Banner {
+  id: string;
+  url: string;
+  selected?: boolean;
 }
 
 const DeliverySettings: React.FC = () => {
@@ -62,6 +75,7 @@ const DeliverySettings: React.FC = () => {
       '07:00 AM - 09:00 AM',
       '10:00 AM - 12:00 PM'
     ],
+    banners: [],
   };
 
   // State declarations
@@ -72,10 +86,18 @@ const DeliverySettings: React.FC = () => {
     sameDay: [...defaultSettings.sameDayDeliverySlots],
     nextDay: [...defaultSettings.nextDayDeliverySlots],
   });
+  const [tempBanners, setTempBanners] = useState<string[]>([]);
+  
+  // Banner selection modal state
+  const [showBannerModal, setShowBannerModal] = useState(false);
+  const [availableBanners, setAvailableBanners] = useState<Banner[]>([]);
+  const [loadingBanners, setLoadingBanners] = useState(false);
+  const [selectedBanners, setSelectedBanners] = useState<string[]>([]);
 
   // Load saved settings on component mount
   useEffect(() => {
     loadSettings();
+    // Don't load banners here, load them when modal opens
   }, []);
 
   // Function to load settings from AsyncStorage with proper error handling
@@ -99,6 +121,9 @@ const DeliverySettings: React.FC = () => {
           nextDayDeliverySlots: Array.isArray(parsedData.nextDayDeliverySlots)
             ? parsedData.nextDayDeliverySlots
             : defaultSettings.nextDayDeliverySlots,
+          banners: Array.isArray(parsedData.banners)
+            ? parsedData.banners
+            : defaultSettings.banners,
         };
         
         setSettings(loadedSettings);
@@ -106,6 +131,8 @@ const DeliverySettings: React.FC = () => {
           sameDay: loadedSettings.sameDayDeliverySlots,
           nextDay: loadedSettings.nextDayDeliverySlots,
         });
+        setTempBanners(loadedSettings.banners || []);
+        setSelectedBanners(loadedSettings.banners || []);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -115,9 +142,110 @@ const DeliverySettings: React.FC = () => {
         sameDay: defaultSettings.sameDayDeliverySlots,
         nextDay: defaultSettings.nextDayDeliverySlots,
       });
+      setTempBanners(defaultSettings.banners);
+      setSelectedBanners(defaultSettings.banners);
     }
   };
 
+  // Function to load banners from API
+  const loadBanners = async () => {
+    try {
+      setLoadingBanners(true);
+      console.log('Loading banners...');
+      
+      // Mock data for testing - Use these URLs instead
+      const mockBannerUrls = [
+        'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=300&h=150&fit=crop',
+        'https://images.unsplash.com/photo-1607082350899-7e105aa886ae?w=300&h=150&fit=crop',
+        'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=300&h=150&fit=crop',
+        'https://images.unsplash.com/photo-1607082352121-9c4c2dbf9c40?w=300&h=150&fit=crop',
+        'https://images.unsplash.com/photo-1607082350306-8a5c4ce03d6d?w=300&h=150&fit=crop',
+      ];
+      
+      // For actual API call, uncomment this:
+      /*
+      const response = await fetch('http://localhost:8080/api/admin/getAllBanners');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const bannerUrls = await response.json();
+      console.log('Banners loaded:', bannerUrls);
+      */
+      
+      const bannerUrls = mockBannerUrls;
+      
+      const banners: Banner[] = bannerUrls.map((url, index) => ({
+        id: `banner-${index + 1}`,
+        url,
+        selected: selectedBanners.includes(url), // Use selectedBanners state
+      }));
+      
+      console.log('Setting available banners:', banners.length);
+      setAvailableBanners(banners);
+    } catch (error) {
+      console.error('Error loading banners:', error);
+      Alert.alert('Error', 'Failed to load banners. Please try again.');
+    } finally {
+      setLoadingBanners(false);
+    }
+  };
+
+  // Function to open banner selection modal
+  const handleOpenBannerModal = async () => {
+    console.log('Opening banner modal...');
+    console.log('Current tempBanners:', tempBanners);
+    console.log('Current selectedBanners:', selectedBanners);
+    
+    // Update selected banners to current tempBanners
+    setSelectedBanners([...tempBanners]);
+    
+    // Show modal first
+    setShowBannerModal(true);
+    
+    // Then load banners
+    await loadBanners();
+  };
+
+  // Function to toggle banner selection
+  const toggleBannerSelection = (bannerUrl: string) => {
+    console.log('Toggling banner:', bannerUrl);
+    setSelectedBanners(prev => {
+      const newSelectedBanners = prev.includes(bannerUrl)
+        ? prev.filter(url => url !== bannerUrl)
+        : [...prev, bannerUrl];
+      
+      console.log('New selected banners:', newSelectedBanners);
+      return newSelectedBanners;
+    });
+
+    // Update available banners selection state
+    setAvailableBanners(prev => 
+      prev.map(banner => 
+        banner.url === bannerUrl 
+          ? { ...banner, selected: !banner.selected }
+          : banner
+      )
+    );
+  };
+
+  // Function to save selected banners
+  const handleSaveBanners = () => {
+    console.log('Saving banners:', selectedBanners);
+    setTempBanners([...selectedBanners]);
+    setShowBannerModal(false);
+  };
+
+  // Function to remove a banner
+  const handleRemoveBanner = (bannerUrl: string) => {
+    console.log('Removing banner:', bannerUrl);
+    setTempBanners(prev => {
+      const newBanners = prev.filter(url => url !== bannerUrl);
+      console.log('New temp banners after removal:', newBanners);
+      return newBanners;
+    });
+  };
+
+  // Rest of your existing functions remain the same...
   // Function to save settings
   const handleSave = async () => {
     setLoading(true);
@@ -126,6 +254,8 @@ const DeliverySettings: React.FC = () => {
         ...settings,
         sameDayDeliverySlots: tempSlots.sameDay,
         nextDayDeliverySlots: tempSlots.nextDay,
+        banners: tempBanners,
+        updatedAt: new Date().toISOString(),
       };
       
       // Save to AsyncStorage
@@ -137,6 +267,7 @@ const DeliverySettings: React.FC = () => {
         const shopData = JSON.parse(shopDataStr);
         shopData.deliveryFee = `₹${updatedSettings.deliveryFee}`;
         shopData.minOrder = `₹${updatedSettings.minOrder}`;
+        shopData.banners = updatedSettings.banners;
         await AsyncStorage.setItem('shopkeeperData', JSON.stringify(shopData));
       }
       
@@ -252,6 +383,115 @@ const DeliverySettings: React.FC = () => {
     );
   };
 
+  // Render banner selection modal
+  const renderBannerModal = () => {
+    console.log('Rendering modal, showBannerModal:', showBannerModal);
+    console.log('Available banners count:', availableBanners.length);
+    
+    return (
+      <Modal
+        visible={showBannerModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          console.log('Modal close requested');
+          setShowBannerModal(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Banners</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  console.log('Close button pressed');
+                  setShowBannerModal(false);
+                }}
+              >
+                <MaterialIcons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalSubtitle}>
+              Select multiple banners (currently selected: {selectedBanners.length})
+            </Text>
+            
+            {loadingBanners ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+                <Text style={styles.loadingText}>Loading banners...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={availableBanners}
+                keyExtractor={(item) => item.id}
+                numColumns={2}
+                contentContainerStyle={styles.bannerGrid}
+                renderItem={({ item, index }) => {
+                  console.log(`Rendering banner ${index}:`, item.url, 'selected:', item.selected);
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.bannerCard,
+                        item.selected && styles.bannerCardSelected,
+                      ]}
+                      onPress={() => toggleBannerSelection(item.url)}
+                    >
+                      <Image
+                        source={{ uri: item.url }}
+                        style={styles.bannerImage}
+                        resizeMode="cover"
+                        onError={(error) => console.log('Image error:', error.nativeEvent.error)}
+                      />
+                      {item.selected && (
+                        <View style={styles.bannerCheckmark}>
+                          <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <MaterialIcons name="image-not-supported" size={48} color="#ccc" />
+                    <Text style={styles.emptyText}>No banners available</Text>
+                    <TouchableOpacity 
+                      style={styles.retryButton}
+                      onPress={loadBanners}
+                    >
+                      <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                  </View>
+                }
+              />
+            )}
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowBannerModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.saveModalButton,
+                  selectedBanners.length === 0 && styles.saveModalButtonDisabled,
+                ]}
+                onPress={handleSaveBanners}
+                disabled={selectedBanners.length === 0}
+              >
+                <Text style={styles.saveModalButtonText}>
+                  Save ({selectedBanners.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   // Map delivery type codes to display names
   const deliveryTypeNames: Record<string, string> = {
     'SameDay': 'Same Day',
@@ -300,6 +540,58 @@ const DeliverySettings: React.FC = () => {
             placeholder="Enter delivery fee"
           />
         </View>
+      </View>
+
+      {/* Banners Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Store Banners</Text>
+        <Text style={styles.sectionDescription}>
+          Select banners to display in your store
+        </Text>
+        
+        <TouchableOpacity
+          style={styles.bannerSelectorButton}
+          onPress={handleOpenBannerModal}
+        >
+          <View style={styles.bannerSelectorContent}>
+            <View style={styles.plusButton}>
+              <MaterialIcons name="add" size={24} color="#fff" />
+            </View>
+            <View style={styles.bannerSelectorInfo}>
+              <Text style={styles.bannerSelectorTitle}>Select Banners</Text>
+              <Text style={styles.bannerSelectorSubtitle}>
+                {tempBanners.length} banner{tempBanners.length !== 1 ? 's' : ''} selected
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#666" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Selected banners preview */}
+        {tempBanners.length > 0 && (
+          <View style={styles.selectedBannersContainer}>
+            <Text style={styles.selectedBannersTitle}>Selected Banners:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.bannersList}>
+                {tempBanners.map((bannerUrl, index) => (
+                  <View key={`${bannerUrl}-${index}`} style={styles.bannerPreviewContainer}>
+                    <Image
+                      source={{ uri: bannerUrl }}
+                      style={styles.bannerPreview}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.removeBannerButton}
+                      onPress={() => handleRemoveBanner(bannerUrl)}
+                    >
+                      <MaterialIcons name="close" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
       </View>
 
       {/* Delivery Types Section */}
@@ -351,6 +643,16 @@ const DeliverySettings: React.FC = () => {
           <View style={styles.configInfo}>
             <Text style={styles.configLabel}>Delivery Fee:</Text>
             <Text style={styles.configValue}>₹{settings.deliveryFee}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.configItem}>
+          <MaterialIcons name="collections" size={20} color="#2196F3" />
+          <View style={styles.configInfo}>
+            <Text style={styles.configLabel}>Selected Banners:</Text>
+            <Text style={styles.configValue}>
+              {tempBanners.length} banner{tempBanners.length !== 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
         
@@ -416,11 +718,14 @@ const DeliverySettings: React.FC = () => {
           Changes will be applied immediately. Make sure to inform customers about any changes in delivery slots.
         </Text>
       </View>
+
+      {/* Banner Selection Modal */}
+      {renderBannerModal()}
     </ScrollView>
   );
 };
 
-// Styles (same as before)
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -495,6 +800,79 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#333',
+  },
+  bannerSelectorButton: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+    padding: 16,
+  },
+  bannerSelectorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  plusButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerSelectorInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  bannerSelectorTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  bannerSelectorSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  selectedBannersContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  selectedBannersTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  bannersList: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bannerPreviewContainer: {
+    position: 'relative',
+    width: 100,
+    height: 60,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  bannerPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeBannerButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deliveryTypeItem: {
     flexDirection: 'row',
@@ -629,6 +1007,131 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2e7d32',
     lineHeight: 20,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  bannerGrid: {
+    padding: 16,
+    gap: 16,
+  },
+  bannerCard: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    minWidth: '45%',
+    aspectRatio: 2,
+  },
+  bannerCardSelected: {
+    borderColor: '#4CAF50',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerCheckmark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    padding: 2,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#999',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  saveModalButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+  },
+  saveModalButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  saveModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
 

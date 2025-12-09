@@ -1,15 +1,13 @@
-// productStore.ts
+// productStore.ts (UPDATED - REMOVED price and quantity)
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Product interface
+// Product interface - UPDATED (removed price and quantity)
 export interface Product {
   id: string;
   name: string;
   description: string;
-  price: string;
   category: string;
   subCategory: string;
-  quantity: string;
   image: string | null;
   units: string;
 }
@@ -28,7 +26,14 @@ export const loadProductsFromStorage = async (): Promise<void> => {
   try {
     const storedProducts = await AsyncStorage.getItem(PRODUCTS_STORAGE_KEY);
     if (storedProducts) {
-      products = JSON.parse(storedProducts);
+      const parsedProducts = JSON.parse(storedProducts);
+      
+      // Remove price and quantity from existing data if they exist
+      products = parsedProducts.map((product: any) => {
+        const { price, quantity, ...rest } = product;
+        return rest;
+      });
+      
       notifyListeners();
     }
   } catch (error) {
