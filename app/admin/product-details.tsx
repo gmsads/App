@@ -1,4 +1,4 @@
-// ProductDetail.tsx (UPDATED WITH unitOptions)
+// ProductDetail.tsx (UPDATED WITH unitOptions) - PRICE & QUANTITY REMOVED
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
@@ -21,17 +21,15 @@ const ProductDetail: React.FC = () => {
   
   const [product, setProduct] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
-  const [selectedUnit, setSelectedUnit] = useState<string>(''); // NEW
-  const [selectedUnitOption, setSelectedUnitOption] = useState<string>(''); // NEW
+  const [selectedUnit, setSelectedUnit] = useState<string>('');
+  const [selectedUnitOption, setSelectedUnitOption] = useState<string>('');
 
   useEffect(() => {
-    // Get product from context using ID
     const productId = params.id as string;
     if (productId && products.length > 0) {
       const foundProduct = products.find(p => p.id === productId);
       if (foundProduct) {
         setProduct(foundProduct);
-        // Set default selections
         if (foundProduct.units && foundProduct.units.length > 0) {
           setSelectedUnit(foundProduct.units[0]);
         }
@@ -39,11 +37,9 @@ const ProductDetail: React.FC = () => {
           setSelectedUnitOption(foundProduct.unitOptions[0]);
         }
       } else {
-        // If product not found, show error
         setProduct({
           id: '1',
           name: 'Product Not Found',
-          price: '0',
           image: 'https://via.placeholder.com/150/FF6B6B/FFFFFF?text=Error',
           description: 'Product information could not be loaded',
           category: 'error',
@@ -67,7 +63,6 @@ const ProductDetail: React.FC = () => {
   }
 
   const handleAddToCart = () => {
-    // You can integrate with your cartStore here
     const unitDisplay = selectedUnitOption && selectedUnitOption !== '1' 
       ? `${selectedUnitOption}${selectedUnit}`
       : selectedUnit;
@@ -90,14 +85,10 @@ const ProductDetail: React.FC = () => {
 
   const increaseQuantity = () => setQuantity(prev => prev + 1);
   const decreaseQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1);
-
-  const price = parseFloat(product.price) || 0;
   
-  // Get units as array
   const unitsArray = Array.isArray(product.units) ? product.units : 
     (typeof product.units === 'string' ? product.units.split(',').map((u: string) => u.trim()) : []);
   
-  // Get unit options as array
   const unitOptionsArray = Array.isArray(product.unitOptions) ? product.unitOptions : 
     (typeof product.unitOptions === 'string' ? product.unitOptions.split(',').map((u: string) => u.trim()) : ['1']);
 
@@ -119,9 +110,8 @@ const ProductDetail: React.FC = () => {
           </View>
           
           <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.productPrice}>₹{price.toFixed(2)}</Text>
           
-          {/* Unit Selection - NEW */}
+          {/* Unit Selection */}
           <View style={styles.unitSelectionContainer}>
             <Text style={styles.unitSelectionLabel}>Select Unit:</Text>
             <View style={styles.unitOptions}>
@@ -145,7 +135,7 @@ const ProductDetail: React.FC = () => {
             </View>
           </View>
           
-          {/* Unit Option Selection - NEW */}
+          {/* Unit Option Selection */}
           {unitOptionsArray.length > 1 && (
             <View style={styles.unitOptionSelectionContainer}>
               <Text style={styles.unitSelectionLabel}>Select Size:</Text>
@@ -197,10 +187,6 @@ const ProductDetail: React.FC = () => {
               <Text style={styles.detailValue}>{product.subCategory || 'N/A'}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Available Quantity:</Text>
-              <Text style={styles.detailValue}>{product.quantity || 0}</Text>
-            </View>
-            <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Available Units:</Text>
               <Text style={styles.detailValue}>
                 {unitsArray.join(', ') || 'N/A'}
@@ -249,13 +235,6 @@ const ProductDetail: React.FC = () => {
                 <Text style={styles.quantityButtonText}>+</Text>
               </TouchableOpacity>
             </View>
-          </View>
-          
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalPrice}>
-              ₹{(price * quantity).toFixed(2)}
-            </Text>
           </View>
           
           <TouchableOpacity 
@@ -316,12 +295,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 8,
-  },
-  productPrice: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#e74c3c',
     marginBottom: 20,
   },
   unitSelectionContainer: {
@@ -430,7 +403,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
     paddingVertical: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -469,23 +442,6 @@ const styles = StyleSheet.create({
     minWidth: 30,
     textAlign: 'center',
   },
-  totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
-    paddingVertical: 16,
-  },
-  totalLabel: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#2c3e50',
-  },
-  totalPrice: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#e74c3c',
-  },
   addToCartButton: {
     backgroundColor: '#e74c3c',
     paddingVertical: 16,
@@ -499,6 +455,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    marginTop: 10,
+    marginBottom: 30,
   },
   disabledButton: {
     backgroundColor: '#95a5a6',

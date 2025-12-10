@@ -1,4 +1,4 @@
-// AddProduct.tsx (UPDATED WITH unitOptions)
+// AddProduct.tsx (UPDATED WITH unitOptions) - PRICE & QUANTITY REMOVED
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -18,16 +18,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { useProductContext } from './product-context';
 import Checkbox from 'expo-checkbox';
 
-// Interface for form data - UPDATED
+// Interface for form data - PRICE & QUANTITY REMOVED
 interface ProductFormData {
   name: string;
   description: string;
-  price: string;
   units: string[];
   unitOptions: string[];
   category: string;
   subCategory: string;
-  quantity: string;
   image: string | null;
   sameDayAvailable: boolean;
   nextDayAvailable: boolean;
@@ -38,22 +36,16 @@ interface ProductFormData {
 }
 
 const AddProduct = () => {
-  // Get router for navigation
   const router = useRouter();
-  
-  // Get context functions
   const { addProduct, checkProductExists } = useProductContext();
 
-  // State for product form data - UPDATED
   const [productData, setProductData] = useState<ProductFormData>({
     name: '',
     description: '',
-    price: '',
     units: [],
     unitOptions: [],
     category: '',
     subCategory: '',
-    quantity: '0',
     image: null,
     sameDayAvailable: true,
     nextDayAvailable: true,
@@ -63,35 +55,29 @@ const AddProduct = () => {
     customSubCategory: '',
   });
 
-  // State for modal visibility - ADDED unitOptionsModalVisible
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [subCategoryModalVisible, setSubCategoryModalVisible] = useState(false);
   const [unitsModalVisible, setUnitsModalVisible] = useState(false);
-  const [unitOptionsModalVisible, setUnitOptionsModalVisible] = useState(false); // NEW
+  const [unitOptionsModalVisible, setUnitOptionsModalVisible] = useState(false);
   
-  // State for loading
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // State for showing custom inputs
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
   const [showCustomSubCategoryInput, setShowCustomSubCategoryInput] = useState(false);
   const [showCustomUnitInput, setShowCustomUnitInput] = useState(false);
-  const [showCustomUnitOptionInput, setShowCustomUnitOptionInput] = useState(false); // NEW
+  const [showCustomUnitOptionInput, setShowCustomUnitOptionInput] = useState(false);
 
-  // State for search in modals
   const [categorySearch, setCategorySearch] = useState('');
   const [subCategorySearch, setSubCategorySearch] = useState('');
   const [unitSearch, setUnitSearch] = useState('');
-  const [unitOptionSearch, setUnitOptionSearch] = useState(''); // NEW
+  const [unitOptionSearch, setUnitOptionSearch] = useState('');
 
-  // Predefined categories
   const predefinedCategories: string[] = [
     'Fruits',
     'Vegetables',
     'Flowers'
   ];
 
-  // Comprehensive sub-categories
   const subCategories: Record<string, string[]> = {
     'Fruits': [
       'Apple',
@@ -241,7 +227,6 @@ const AddProduct = () => {
     ]
   };
 
-  // Predefined units
   const predefinedUnits: string[] = [
     'kg',
     'kgs',
@@ -262,7 +247,6 @@ const AddProduct = () => {
     'packets'
   ];
 
-  // Predefined unit options - NEW
   const predefinedUnitOptions: string[] = [
     '750',
     '500',
@@ -273,17 +257,14 @@ const AddProduct = () => {
     '1'
   ];
 
-  // Function to pick image from gallery
   const pickImage = async (): Promise<void> => {
     try {
-      // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Required', 'Sorry, we need camera roll permissions to add images!');
         return;
       }
 
-      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -291,7 +272,6 @@ const AddProduct = () => {
         quality: 1,
       });
 
-      // Set image if not canceled
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setProductData({ ...productData, image: result.assets[0].uri });
       }
@@ -301,35 +281,28 @@ const AddProduct = () => {
     }
   };
 
-  // Function to toggle unit selection
   const handleUnitToggle = (unit: string): void => {
     const updatedUnits = [...productData.units];
     if (updatedUnits.includes(unit)) {
-      // Remove unit if already selected
       const index = updatedUnits.indexOf(unit);
       updatedUnits.splice(index, 1);
     } else {
-      // Add unit if not selected
       updatedUnits.push(unit);
     }
     setProductData({ ...productData, units: updatedUnits });
   };
 
-  // Function to toggle unit option selection - NEW
   const handleUnitOptionToggle = (unitOption: string): void => {
     const updatedUnitOptions = [...productData.unitOptions];
     if (updatedUnitOptions.includes(unitOption)) {
-      // Remove unit option if already selected
       const index = updatedUnitOptions.indexOf(unitOption);
       updatedUnitOptions.splice(index, 1);
     } else {
-      // Add unit option if not selected
       updatedUnitOptions.push(unitOption);
     }
     setProductData({ ...productData, unitOptions: updatedUnitOptions });
   };
 
-  // Function to add custom unit
   const handleAddCustomUnit = (): void => {
     if (productData.customUnit.trim()) {
       const customUnit = productData.customUnit.trim();
@@ -346,7 +319,6 @@ const AddProduct = () => {
     }
   };
 
-  // Function to add custom unit option - NEW
   const handleAddCustomUnitOption = (): void => {
     if (productData.customUnitOption.trim()) {
       const customUnitOption = productData.customUnitOption.trim();
@@ -363,7 +335,6 @@ const AddProduct = () => {
     }
   };
 
-  // Function to add custom category
   const handleAddCustomCategory = (): void => {
     if (productData.customCategory.trim()) {
       const customCategory = productData.customCategory.trim();
@@ -379,7 +350,6 @@ const AddProduct = () => {
     }
   };
 
-  // Function to add custom sub-category
   const handleAddCustomSubCategory = (): void => {
     if (productData.customSubCategory.trim()) {
       const customSubCategory = productData.customSubCategory.trim();
@@ -393,38 +363,18 @@ const AddProduct = () => {
     }
   };
 
-  // Function to save product - UPDATED
   const handleSave = (): void => {
-    // Prevent multiple submissions
     if (isSubmitting) return;
     
     setIsSubmitting(true);
 
     try {
-      // Validate required fields - UPDATED
-      if (!productData.name || !productData.category || productData.units.length === 0 || !productData.price || !productData.quantity) {
+      if (!productData.name || !productData.category || productData.units.length === 0) {
         Alert.alert('Error', 'Please fill in all required fields (*)');
         setIsSubmitting(false);
         return;
       }
 
-      // Validate price is a valid number
-      const priceNum = parseFloat(productData.price);
-      if (isNaN(priceNum) || priceNum <= 0) {
-        Alert.alert('Error', 'Please enter a valid price');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validate quantity is a valid number
-      const quantityNum = parseInt(productData.quantity);
-      if (isNaN(quantityNum) || quantityNum < 0) {
-        Alert.alert('Error', 'Please enter a valid quantity');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Check if product exists
       const existsCheck = checkProductExists(productData.name, productData.category);
       if (existsCheck.exists) {
         Alert.alert('Product Already Exists', existsCheck.message);
@@ -432,25 +382,20 @@ const AddProduct = () => {
         return;
       }
 
-      // Prepare product data - UPDATED
       const productToSave = {
         name: productData.name.trim(),
         description: productData.description.trim(),
-        price: productData.price,
         category: productData.category,
         subCategory: productData.subCategory || '',
-        quantity: quantityNum,
         image: productData.image || '',
         units: productData.units,
-        unitOptions: productData.unitOptions.length > 0 ? productData.unitOptions : ['1'], // Default to ['1'] if empty
+        unitOptions: productData.unitOptions.length > 0 ? productData.unitOptions : ['1'],
         sameDayAvailable: productData.sameDayAvailable,
         nextDayAvailable: productData.nextDayAvailable
       };
 
-      // Add product using context
       const result = addProduct(productToSave);
 
-      // Handle result
       if (result.success) {
         Alert.alert(
           'Success',
@@ -492,7 +437,6 @@ const AddProduct = () => {
     }
   };
 
-  // Function to select category
   const handleCategorySelect = (category: string): void => {
     setProductData({ 
       ...productData, 
@@ -503,19 +447,16 @@ const AddProduct = () => {
     setCategorySearch('');
   };
 
-  // Function to select sub-category
   const handleSubCategorySelect = (subCategory: string): void => {
     setProductData({ ...productData, subCategory });
     setSubCategoryModalVisible(false);
     setSubCategorySearch('');
   };
 
-  // Function to get filtered sub-categories
   const getCurrentSubCategories = (): string[] => {
     if (!productData.category) return [];
     const categories = subCategories[productData.category] || [];
     
-    // Filter by search term
     if (subCategorySearch.trim()) {
       return categories.filter(item =>
         item.toLowerCase().includes(subCategorySearch.toLowerCase())
@@ -525,19 +466,16 @@ const AddProduct = () => {
     return categories;
   };
 
-  // Function to remove unit
   const removeUnit = (unit: string): void => {
     const updatedUnits = productData.units.filter(u => u !== unit);
     setProductData({ ...productData, units: updatedUnits });
   };
 
-  // Function to remove unit option - NEW
   const removeUnitOption = (unitOption: string): void => {
     const updatedUnitOptions = productData.unitOptions.filter(u => u !== unitOption);
     setProductData({ ...productData, unitOptions: updatedUnitOptions });
   };
 
-  // Function to filter categories
   const getFilteredCategories = (): string[] => {
     if (!categorySearch.trim()) return predefinedCategories;
     
@@ -546,7 +484,6 @@ const AddProduct = () => {
     );
   };
 
-  // Function to filter units
   const getFilteredUnits = (): string[] => {
     if (!unitSearch.trim()) return predefinedUnits;
     
@@ -555,7 +492,6 @@ const AddProduct = () => {
     );
   };
 
-  // Function to filter unit options - NEW
   const getFilteredUnitOptions = (): string[] => {
     if (!unitOptionSearch.trim()) return predefinedUnitOptions;
     
@@ -564,26 +500,23 @@ const AddProduct = () => {
     );
   };
 
-  // Function to close all modals - UPDATED
   const closeAllModals = (): void => {
     setCategoryModalVisible(false);
     setSubCategoryModalVisible(false);
     setUnitsModalVisible(false);
-    setUnitOptionsModalVisible(false); // NEW
+    setUnitOptionsModalVisible(false);
     setCategorySearch('');
     setSubCategorySearch('');
     setUnitSearch('');
-    setUnitOptionSearch(''); // NEW
+    setUnitOptionSearch('');
     setShowCustomCategoryInput(false);
     setShowCustomSubCategoryInput(false);
     setShowCustomUnitInput(false);
-    setShowCustomUnitOptionInput(false); // NEW
+    setShowCustomUnitOptionInput(false);
   };
 
-  // Render component
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -592,9 +525,7 @@ const AddProduct = () => {
         <View style={styles.placeholder} />
       </View>
 
-      {/* Form */}
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        {/* Image Upload */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Product Image (Optional)</Text>
           <TouchableOpacity style={styles.imageUpload} onPress={pickImage}>
@@ -620,7 +551,6 @@ const AddProduct = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Product Name */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Product Name *</Text>
           <TextInput
@@ -633,7 +563,6 @@ const AddProduct = () => {
           />
         </View>
 
-        {/* Description */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Description (Optional)</Text>
           <TextInput
@@ -649,33 +578,6 @@ const AddProduct = () => {
           />
         </View>
 
-        {/* Price */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Price (₹) *</Text>
-          <TextInput
-            style={styles.input}
-            value={productData.price}
-            onChangeText={(text) => setProductData({ ...productData, price: text })}
-            placeholder="Enter price"
-            placeholderTextColor="#95a5a6"
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Quantity */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Quantity *</Text>
-          <TextInput
-            style={styles.input}
-            value={productData.quantity}
-            onChangeText={(text) => setProductData({ ...productData, quantity: text })}
-            placeholder="Enter quantity"
-            placeholderTextColor="#95a5a6"
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Units */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Units *</Text>
           <TouchableOpacity 
@@ -689,7 +591,6 @@ const AddProduct = () => {
             </Text>
           </TouchableOpacity>
           
-          {/* Selected Units Display */}
           {productData.units.length > 0 && (
             <View style={styles.selectedUnitsContainer}>
               <Text style={styles.selectedUnitsLabel}>Selected Units:</Text>
@@ -710,7 +611,6 @@ const AddProduct = () => {
           )}
         </View>
 
-        {/* Unit Options - NEW */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Unit Options (Optional)</Text>
           <Text style={styles.subLabel}>e.g., 750ml, 500g, etc.</Text>
@@ -725,7 +625,6 @@ const AddProduct = () => {
             </Text>
           </TouchableOpacity>
           
-          {/* Selected Unit Options Display */}
           {productData.unitOptions.length > 0 && (
             <View style={styles.selectedUnitsContainer}>
               <Text style={styles.selectedUnitsLabel}>Selected Unit Options:</Text>
@@ -746,7 +645,6 @@ const AddProduct = () => {
           )}
         </View>
 
-        {/* Category */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Category *</Text>
           <TouchableOpacity 
@@ -759,7 +657,6 @@ const AddProduct = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Sub Category */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Sub Category (Optional)</Text>
           <TouchableOpacity 
@@ -781,7 +678,6 @@ const AddProduct = () => {
           )}
         </View>
 
-        {/* Delivery Options */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Delivery Options</Text>
           <View style={styles.checkboxContainer}>
@@ -804,7 +700,6 @@ const AddProduct = () => {
           </View>
         </View>
 
-        {/* Save Button */}
         <TouchableOpacity 
           style={[
             styles.saveButton,
@@ -818,7 +713,6 @@ const AddProduct = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Required Hint */}
         <View style={styles.requiredHint}>
           <Text style={styles.requiredHintText}>
             * Required fields
@@ -826,7 +720,6 @@ const AddProduct = () => {
         </View>
       </ScrollView>
 
-      {/* Units Modal */}
       <Modal
         visible={unitsModalVisible}
         animationType="slide"
@@ -838,7 +731,6 @@ const AddProduct = () => {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Select Units (Multiple)</Text>
               
-              {/* Search Input */}
               <View style={styles.modalSearchContainer}>
                 <TextInput
                   style={styles.modalSearchInput}
@@ -849,7 +741,6 @@ const AddProduct = () => {
                 />
               </View>
               
-              {/* Units List */}
               <FlatList
                 data={getFilteredUnits()}
                 keyExtractor={(item) => item}
@@ -865,7 +756,6 @@ const AddProduct = () => {
                 )}
                 ListFooterComponent={() => (
                   <View>
-                    {/* Custom Unit Input */}
                     {showCustomUnitInput ? (
                       <View style={styles.customInputContainer}>
                         <TextInput
@@ -906,7 +796,6 @@ const AddProduct = () => {
                 )}
               />
               
-              {/* Done Button */}
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={closeAllModals}
@@ -918,7 +807,6 @@ const AddProduct = () => {
         </SafeAreaView>
       </Modal>
 
-      {/* Unit Options Modal - NEW */}
       <Modal
         visible={unitOptionsModalVisible}
         animationType="slide"
@@ -931,7 +819,6 @@ const AddProduct = () => {
               <Text style={styles.modalTitle}>Select Unit Options (Multiple)</Text>
               <Text style={styles.modalSubtitle}>e.g., 750, 500, 250, etc.</Text>
               
-              {/* Search Input */}
               <View style={styles.modalSearchContainer}>
                 <TextInput
                   style={styles.modalSearchInput}
@@ -942,7 +829,6 @@ const AddProduct = () => {
                 />
               </View>
               
-              {/* Unit Options List */}
               <FlatList
                 data={getFilteredUnitOptions()}
                 keyExtractor={(item) => item}
@@ -958,7 +844,6 @@ const AddProduct = () => {
                 )}
                 ListFooterComponent={() => (
                   <View>
-                    {/* Custom Unit Option Input */}
                     {showCustomUnitOptionInput ? (
                       <View style={styles.customInputContainer}>
                         <TextInput
@@ -1000,7 +885,6 @@ const AddProduct = () => {
                 )}
               />
               
-              {/* Done Button */}
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={closeAllModals}
@@ -1012,7 +896,6 @@ const AddProduct = () => {
         </SafeAreaView>
       </Modal>
 
-      {/* Category Modal */}
       <Modal
         visible={categoryModalVisible}
         animationType="slide"
@@ -1024,7 +907,6 @@ const AddProduct = () => {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Select Category</Text>
               
-              {/* Search Input */}
               <View style={styles.modalSearchContainer}>
                 <TextInput
                   style={styles.modalSearchInput}
@@ -1035,7 +917,6 @@ const AddProduct = () => {
                 />
               </View>
               
-              {/* Categories List */}
               <FlatList
                 data={getFilteredCategories()}
                 keyExtractor={(item) => item}
@@ -1049,7 +930,6 @@ const AddProduct = () => {
                 )}
                 ListFooterComponent={() => (
                   <View>
-                    {/* Custom Category Input */}
                     {showCustomCategoryInput ? (
                       <View style={styles.customInputContainer}>
                         <TextInput
@@ -1090,7 +970,6 @@ const AddProduct = () => {
                 )}
               />
               
-              {/* Cancel Button */}
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={closeAllModals}
@@ -1102,7 +981,6 @@ const AddProduct = () => {
         </SafeAreaView>
       </Modal>
 
-      {/* Sub Category Modal */}
       <Modal
         visible={subCategoryModalVisible}
         animationType="slide"
@@ -1114,7 +992,6 @@ const AddProduct = () => {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Select Sub Category</Text>
               
-              {/* Search Input */}
               <View style={styles.modalSearchContainer}>
                 <TextInput
                   style={styles.modalSearchInput}
@@ -1125,7 +1002,6 @@ const AddProduct = () => {
                 />
               </View>
               
-              {/* Sub Categories List */}
               <FlatList
                 data={getCurrentSubCategories()}
                 keyExtractor={(item) => item}
@@ -1139,7 +1015,6 @@ const AddProduct = () => {
                 )}
                 ListFooterComponent={() => (
                   <View>
-                    {/* Custom Sub-Category Input */}
                     {showCustomSubCategoryInput ? (
                       <View style={styles.customInputContainer}>
                         <TextInput
@@ -1180,7 +1055,6 @@ const AddProduct = () => {
                 )}
               />
               
-              {/* Cancel Button */}
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={closeAllModals}
@@ -1195,7 +1069,6 @@ const AddProduct = () => {
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,

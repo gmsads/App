@@ -174,13 +174,11 @@ export default function RootLayout() {
             {/* SHOPKEEPER ORDERS SECTION */}
             {/* =============================== */}
             
-            {/* Orders List - View all orders */}
+            {/* Orders List - View all orders with tabs (All, Today's, Pending) */}
             <Stack.Screen 
               name="shopkeeper/orders/orders-list" 
               options={{ 
-                headerShown: true, 
-                title: 'Orders',
-                headerBackTitle: 'Dashboard'
+                headerShown: false,
               }} 
             />
             
@@ -190,27 +188,23 @@ export default function RootLayout() {
               options={{ 
                 headerShown: true, 
                 title: 'Order Details',
-                headerBackTitle: 'Orders'
+                headerBackTitle: 'Back'
               }} 
             />
             
-            {/* Today's Orders - Filtered view for today */}
+            {/* Today's Orders - Only shows today's orders (no tabs) */}
             <Stack.Screen 
               name="shopkeeper/orders/todays-orders" 
               options={{ 
-                headerShown: true, 
-                title: "Today's Orders",
-                headerBackTitle: 'Orders'
+                headerShown: false,
               }} 
             />
             
-            {/* Pending Orders - Filtered view for pending orders */}
+            {/* Pending Orders - Only shows pending orders (no tabs) */}
             <Stack.Screen 
               name="shopkeeper/orders/pending-orders" 
               options={{ 
-                headerShown: true, 
-                title: 'Pending Orders',
-                headerBackTitle: 'Orders'
+                headerShown: false,
               }} 
             />
             

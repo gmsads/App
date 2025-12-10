@@ -1,4 +1,4 @@
-// ProductManagement.tsx (UPDATED WITH unitOptions)
+// ProductManagement.tsx (UPDATED WITH unitOptions) - PRICE & QUANTITY REMOVED
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -26,21 +26,19 @@ const ProductManagement: React.FC = () => {
   const [editProductData, setEditProductData] = useState({
     name: '',
     description: '',
-    price: '',
     category: '',
     subCategory: '',
-    quantity: '',
     image: '',
     units: [] as string[],
-    unitOptions: [] as string[], // NEW
-    sameDayAvailable: false, // NEW
-    nextDayAvailable: false, // NEW
+    unitOptions: [] as string[],
+    sameDayAvailable: false,
+    nextDayAvailable: false,
   });
 
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [subCategoryModalVisible, setSubCategoryModalVisible] = useState(false);
-  const [unitsModalVisible, setUnitsModalVisible] = useState(false); // NEW
-  const [unitOptionsModalVisible, setUnitOptionsModalVisible] = useState(false); // NEW
+  const [unitsModalVisible, setUnitsModalVisible] = useState(false);
+  const [unitOptionsModalVisible, setUnitOptionsModalVisible] = useState(false);
 
   const categories: string[] = [
     'Fruits',
@@ -197,7 +195,6 @@ const ProductManagement: React.FC = () => {
     ]
   };
 
-  // Predefined units
   const predefinedUnits: string[] = [
     'kg',
     'kgs',
@@ -218,7 +215,6 @@ const ProductManagement: React.FC = () => {
     'packets'
   ];
 
-  // Predefined unit options
   const predefinedUnitOptions: string[] = [
     '750',
     '500',
@@ -258,7 +254,6 @@ const ProductManagement: React.FC = () => {
   const handleEditProduct = (product: any) => {
     setSelectedProduct(product);
     
-    // Fix: Ensure units and unitOptions are arrays
     let unitsArray: string[] = [];
     if (product.units) {
       if (Array.isArray(product.units)) {
@@ -284,16 +279,14 @@ const ProductManagement: React.FC = () => {
         }
       }
     } else {
-      unitOptionsArray = ['1']; // Default
+      unitOptionsArray = ['1'];
     }
     
     setEditProductData({
       name: product.name,
       description: product.description || '',
-      price: product.price,
       category: product.category,
       subCategory: product.subCategory || '',
-      quantity: product.quantity.toString(),
       image: product.image || '',
       units: unitsArray,
       unitOptions: unitOptionsArray,
@@ -304,30 +297,14 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleUpdateProduct = () => {
-    if (!editProductData.name || !editProductData.price || !editProductData.quantity || !editProductData.category || editProductData.units.length === 0) {
+    if (!editProductData.name || !editProductData.category || editProductData.units.length === 0) {
       Alert.alert('Error', 'Please fill in all required fields (*)');
-      return;
-    }
-
-    // Validate price is a valid number
-    const priceNum = parseFloat(editProductData.price);
-    if (isNaN(priceNum) || priceNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid price');
-      return;
-    }
-
-    // Validate quantity is a valid number
-    const quantityNum = parseInt(editProductData.quantity);
-    if (isNaN(quantityNum) || quantityNum < 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
       return;
     }
 
     if (selectedProduct) {
       const result = updateProduct(selectedProduct.id, {
         ...editProductData,
-        quantity: quantityNum,
-        price: editProductData.price,
         units: editProductData.units,
         unitOptions: editProductData.unitOptions.length > 0 ? editProductData.unitOptions : ['1'],
         sameDayAvailable: editProductData.sameDayAvailable,
@@ -399,7 +376,6 @@ const ProductManagement: React.FC = () => {
   };
 
   const renderProductItem = ({ item }: { item: any }) => {
-    // Fix: Ensure units and unitOptions are always arrays for display
     let displayUnits = 'N/A';
     if (item.units) {
       if (Array.isArray(item.units)) {
@@ -429,12 +405,10 @@ const ProductManagement: React.FC = () => {
         />
         <View style={styles.productInfo}>
           <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.productPrice}>₹{item.price}</Text>
           <Text style={styles.productCategory}>{item.category} • {item.subCategory || 'N/A'}</Text>
           <Text style={styles.productDescription} numberOfLines={2}>
             {item.description || 'No description'}
           </Text>
-          <Text style={styles.productQuantity}>Quantity: {item.quantity}</Text>
           <Text style={styles.productUnits}>Units: {displayUnits}</Text>
           <Text style={styles.productUnitOptions}>Unit Options: {displayUnitOptions}</Text>
           <View style={styles.deliveryInfo}>
@@ -538,30 +512,6 @@ const ProductManagement: React.FC = () => {
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Price (₹) *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editProductData.price}
-                  onChangeText={(text) => setEditProductData({ ...editProductData, price: text })}
-                  placeholder="Enter price"
-                  placeholderTextColor="#95a5a6"
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Quantity *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editProductData.quantity}
-                  onChangeText={(text) => setEditProductData({ ...editProductData, quantity: text })}
-                  placeholder="Enter quantity"
-                  placeholderTextColor="#95a5a6"
-                  keyboardType="numeric"
                 />
               </View>
 
@@ -911,12 +861,6 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     marginBottom: 4,
   },
-  productPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#e74c3c',
-    marginBottom: 2,
-  },
   productCategory: {
     fontSize: 12,
     color: '#7f8c8d',
@@ -925,11 +869,6 @@ const styles = StyleSheet.create({
   productDescription: {
     fontSize: 12,
     color: '#95a5a6',
-    marginBottom: 2,
-  },
-  productQuantity: {
-    fontSize: 12,
-    color: '#7f8c8d',
     marginBottom: 2,
   },
   productUnits: {

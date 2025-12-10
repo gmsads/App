@@ -83,25 +83,18 @@ const ShopkeeperDashboard: React.FC = () => {
       screen: '/shopkeeper/products/product-list',
     },
     {
-      title: 'Pending Orders',
-      count: ordersCount.pending,
-      icon: 'receipt' as const,
-      color: '#FF9800',
-      screen: '/shopkeeper/orders/orders-list?filter=pending',
-    },
-    {
-      title: "Today's Orders",
-      count: ordersCount.today,
-      icon: 'today' as const,
+      title: 'This Week',
+      count: ordersCount.thisWeek,
+      icon: 'date-range' as const,
       color: '#2196F3',
-      screen: '/shopkeeper/orders/orders-list?filter=today',
+      screen: '/shopkeeper/orders/orders-list?filter=week',
     },
     {
-      title: 'My Lists',
+      title: 'Orders',
       count: 15,
       icon: 'list-alt' as const,
       color: '#9C27B0',
-      screen: '/shopkeeper/my-list/my-list',
+      screen: '/shopkeeper/orders/orders-list', // Goes to main orders page with tabs
     },
     {
       title: 'Reports',
@@ -109,13 +102,6 @@ const ShopkeeperDashboard: React.FC = () => {
       icon: 'analytics' as const,
       color: '#795548',
       screen: '/shopkeeper/reports/reports-main',
-    },
-    {
-      title: 'Customers',
-      count: 42,
-      icon: 'people' as const,
-      color: '#607D8B',
-      screen: '/shopkeeper/customers/customers-list',
     },
   ];
 
@@ -145,16 +131,16 @@ const ShopkeeperDashboard: React.FC = () => {
       screen: '/shopkeeper/profile/profile-info',
     },
     {
-      title: 'Notifications',
-      icon: 'notifications' as const,
-      color: '#FF5722',
-      screen: '/shopkeeper/notifications',
+      title: 'Pending Orders',
+      icon: 'pending-actions' as const,
+      color: '#FF9800',
+      screen: '/shopkeeper/orders/pending-orders', // Direct to Pending Orders only
     },
     {
-      title: 'Support',
-      icon: 'help' as const,
-      color: '#009688',
-      screen: '/shopkeeper/support',
+      title: "Today's Orders",
+      icon: 'today' as const,
+      color: '#2196F3',
+      screen: '/shopkeeper/orders/todays-orders', // Direct to Today's Orders only
     },
   ];
 
@@ -258,43 +244,6 @@ const ShopkeeperDashboard: React.FC = () => {
               <MaterialIcons name="star" size={20} color="#FFD700" />
               <Text style={styles.metricValue}>4.5</Text>
               <Text style={styles.metricLabel}>Avg Rating</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <View style={styles.activityCard}>
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#4CAF50' }]}>
-                <MaterialIcons name="shopping-cart" size={16} color="#fff" />
-              </View>
-              <View style={styles.activityText}>
-                <Text style={styles.activityTitle}>New order received</Text>
-                <Text style={styles.activityTime}>2 minutes ago</Text>
-              </View>
-              <Text style={styles.activityAmount}>₹450</Text>
-            </View>
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#2196F3' }]}>
-                <MaterialIcons name="inventory" size={16} color="#fff" />
-              </View>
-              <View style={styles.activityText}>
-                <Text style={styles.activityTitle}>Low stock alert</Text>
-                <Text style={styles.activityTime}>30 minutes ago</Text>
-              </View>
-              <Text style={[styles.activityAmount, { color: '#FF5722' }]}>2 items</Text>
-            </View>
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#FF9800' }]}>
-                <MaterialIcons name="rate-review" size={16} color="#fff" />
-              </View>
-              <View style={styles.activityText}>
-                <Text style={styles.activityTitle}>New review received</Text>
-                <Text style={styles.activityTime}>1 hour ago</Text>
-              </View>
-              <Text style={[styles.activityAmount, { color: '#FFD700' }]}>★★★★☆</Text>
             </View>
           </View>
         </View>
@@ -461,49 +410,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
-  },
-  activityCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  activityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  activityText: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: '#999',
-  },
-  activityAmount: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4CAF50',
   },
 });
 

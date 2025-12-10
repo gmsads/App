@@ -10,12 +10,13 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
-  Platform,
+  Modal,
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 // Define the types
 interface Product {
@@ -25,6 +26,7 @@ interface Product {
   subCategory: string;
   quantity: number;
   unit: string;
+  status: 'in_stock' | 'low_stock' | 'out_of_stock';
 }
 
 interface Category {
@@ -40,11 +42,23 @@ interface StatusOption {
 
 const { width } = Dimensions.get('window');
 
+// Checkbox component
+const Checkbox = ({ checked, onPress }: { checked: boolean; onPress: () => void }) => (
+  <TouchableOpacity onPress={onPress} style={styles.checkbox}>
+    <View style={[styles.checkboxInner, checked && styles.checkboxChecked]}>
+      {checked && <MaterialIcons name="check" size={14} color="#fff" />}
+    </View>
+  </TouchableOpacity>
+);
+
 const StockReport: React.FC = () => {
   const router = useRouter();
   
   // Filter states
-  const [fromDate, setFromDate] = useState<Date>(new Date());
+  const [fromDate, setFromDate] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1); // 1st of current month
+  });
   const [toDate, setToDate] = useState<Date>(new Date());
   const [showFromDatePicker, setShowFromDatePicker] = useState<boolean>(false);
   const [showToDatePicker, setShowToDatePicker] = useState<boolean>(false);
@@ -54,7 +68,6 @@ const StockReport: React.FC = () => {
     { id: 'in_stock', label: 'In Stock', checked: true },
     { id: 'low_stock', label: 'Low Stock', checked: true },
     { id: 'out_of_stock', label: 'Out of Stock', checked: true },
-    { id: 'discontinued', label: 'Discontinued', checked: false },
   ];
   
   const [selectedStatuses, setSelectedStatuses] = useState<StatusOption[]>(orderStatuses);
@@ -65,6 +78,7 @@ const StockReport: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [totalStock, setTotalStock] = useState<number>(0);
+  const [showStatusModal, setShowStatusModal] = useState<boolean>(false);
 
   // Sample data
   const sampleCategories: Category[] = [
@@ -76,16 +90,16 @@ const StockReport: React.FC = () => {
   ];
 
   const sampleProducts: Product[] = [
-    { id: '1', name: 'Spinach', category: 'Vegetables', subCategory: 'Leafy', quantity: 50, unit: 'kg' },
-    { id: '2', name: 'Carrot', category: 'Vegetables', subCategory: 'Root', quantity: 100, unit: 'kg' },
-    { id: '3', name: 'Tomato', category: 'Vegetables', subCategory: 'Fruiting', quantity: 25, unit: 'kg' },
-    { id: '4', name: 'Mango', category: 'Fruits', subCategory: 'Tropical', quantity: 30, unit: 'kg' },
-    { id: '5', name: 'Orange', category: 'Fruits', subCategory: 'Citrus', quantity: 40, unit: 'kg' },
-    { id: '6', name: 'Potato Chips', category: 'Snacks', subCategory: 'Chips', quantity: 120, unit: 'packs' },
-    { id: '7', name: 'Butter Cookies', category: 'Snacks', subCategory: 'Biscuits', quantity: 85, unit: 'boxes' },
-    { id: '8', name: 'Cola', category: 'Beverages', subCategory: 'Soft Drinks', quantity: 200, unit: 'bottles' },
-    { id: '9', name: 'Milk', category: 'Dairy', subCategory: 'Milk', quantity: 150, unit: 'liters' },
-    { id: '10', name: 'Cheese', category: 'Dairy', subCategory: 'Cheese', quantity: 45, unit: 'kg' },
+    { id: '1', name: 'Spinach', category: 'Vegetables', subCategory: 'Leafy', quantity: 50, unit: 'kg', status: 'in_stock' },
+    { id: '2', name: 'Carrot', category: 'Vegetables', subCategory: 'Root', quantity: 100, unit: 'kg', status: 'in_stock' },
+    { id: '3', name: 'Tomato', category: 'Vegetables', subCategory: 'Fruiting', quantity: 5, unit: 'kg', status: 'low_stock' },
+    { id: '4', name: 'Mango', category: 'Fruits', subCategory: 'Tropical', quantity: 30, unit: 'kg', status: 'in_stock' },
+    { id: '5', name: 'Orange', category: 'Fruits', subCategory: 'Citrus', quantity: 0, unit: 'kg', status: 'out_of_stock' },
+    { id: '6', name: 'Potato Chips', category: 'Snacks', subCategory: 'Chips', quantity: 120, unit: 'packs', status: 'in_stock' },
+    { id: '7', name: 'Butter Cookies', category: 'Snacks', subCategory: 'Biscuits', quantity: 15, unit: 'boxes', status: 'low_stock' },
+    { id: '8', name: 'Cola', category: 'Beverages', subCategory: 'Soft Drinks', quantity: 200, unit: 'bottles', status: 'in_stock' },
+    { id: '9', name: 'Milk', category: 'Dairy', subCategory: 'Milk', quantity: 0, unit: 'liters', status: 'out_of_stock' },
+    { id: '10', name: 'Cheese', category: 'Dairy', subCategory: 'Cheese', quantity: 45, unit: 'kg', status: 'in_stock' },
   ];
 
   useEffect(() => {
@@ -128,13 +142,9 @@ const StockReport: React.FC = () => {
     
     // Filter by status
     const activeStatuses = selectedStatuses.filter(s => s.checked).map(s => s.id);
-    filtered = filtered.filter(p => {
-      if (activeStatuses.includes('in_stock') && p.quantity > 20) return true;
-      if (activeStatuses.includes('low_stock') && p.quantity <= 20 && p.quantity > 0) return true;
-      if (activeStatuses.includes('out_of_stock') && p.quantity === 0) return true;
-      if (activeStatuses.includes('discontinued')) return true;
-      return false;
-    });
+    if (activeStatuses.length > 0) {
+      filtered = filtered.filter(p => activeStatuses.includes(p.status));
+    }
     
     setFilteredProducts(filtered);
     calculateTotalStock(filtered);
@@ -148,17 +158,101 @@ const StockReport: React.FC = () => {
     );
   };
 
+  const handleFromDateChange = (event: any, date?: Date) => {
+    setShowFromDatePicker(false);
+    if (date) {
+      // Validate: not before 1st of current month
+      const currentMonthFirst = new Date();
+      currentMonthFirst.setDate(1);
+      currentMonthFirst.setHours(0, 0, 0, 0);
+      
+      if (date < currentMonthFirst) {
+        Alert.alert('Invalid Date', 'From date cannot be before 1st of current month');
+        return;
+      }
+      
+      // Validate: not after toDate
+      if (date > toDate) {
+        setToDate(date);
+      }
+      setFromDate(date);
+    }
+  };
+
+  const handleToDateChange = (event: any, date?: Date) => {
+    setShowToDatePicker(false);
+    if (date) {
+      // Validate: not before fromDate
+      if (date < fromDate) {
+        Alert.alert('Invalid Date', 'To date cannot be before from date');
+        return;
+      }
+      
+      // Validate: not after current date
+      const currentDate = new Date();
+      currentDate.setHours(23, 59, 59, 999);
+      
+      if (date > currentDate) {
+        Alert.alert('Invalid Date', 'To date cannot be after current date');
+        return;
+      }
+      
+      setToDate(date);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const getStatusNames = () => {
+    const activeStatuses = selectedStatuses.filter(s => s.checked);
+    if (activeStatuses.length === 0) {
+      return 'All Statuses';
+    }
+    if (activeStatuses.length === selectedStatuses.length) {
+      return 'All Statuses';
+    }
+    return activeStatuses.map(s => s.label).join(', ');
+  };
+
   const generatePDF = async () => {
     setLoading(true);
     try {
-      Alert.alert('Success', 'PDF download feature would be implemented here');
-      // In a real app, implement PDF generation logic
+      const filterData = {
+        fromDate: formatDate(fromDate),
+        toDate: formatDate(toDate),
+        selectedStatuses: selectedStatuses.filter(s => s.checked).map(s => s.label),
+        selectedCategory,
+        selectedSubCategory,
+      };
+      
+      console.log('Generating report with filters:', filterData);
+      
+      Alert.alert(
+        'Report Generated',
+        `Stock report for ${formatDate(fromDate)} to ${formatDate(toDate)}\n` +
+        `Status: ${getStatusNames()}\n` +
+        `Category: ${selectedCategory}\n` +
+        `Total Products: ${filteredProducts.length}\n` +
+        `Total Stock: ${totalStock} units`,
+        [{ text: 'OK' }]
+      );
     } catch (error) {
       Alert.alert('Error', 'Failed to generate report');
       console.error(error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApplyFilters = () => {
+    filterProducts();
+    Alert.alert('Filters Applied', `Filters updated successfully!\nShowing ${filteredProducts.length} products`);
   };
 
   const renderCategoryTabs = () => (
@@ -216,7 +310,7 @@ const StockReport: React.FC = () => {
               {subCat}
             </Text>
             {selectedSubCategory === subCat && (
-              <MaterialIcons name="check" size={20} color="#4CAF50" />
+              <MaterialIcons name="check" size={20} color="#27ae60" />
             )}
           </TouchableOpacity>
         ))}
@@ -224,37 +318,40 @@ const StockReport: React.FC = () => {
     );
   };
 
-  const renderProductItem = ({ item }: { item: Product }) => (
-    <View style={styles.productRow}>
-      <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-      <View style={styles.quantityContainer}>
-        <Text style={[
-          styles.quantityText, 
-          item.quantity === 0 ? styles.outOfStockText :
-          item.quantity <= 20 ? styles.lowStockText :
-          styles.inStockText
-        ]}>
-          {item.quantity}
-        </Text>
-        <Text style={styles.unitText}>{item.unit}</Text>
-      </View>
-    </View>
-  );
-
-  const handleDateChange = (event: any, date?: Date) => {
-    if (date) {
-      if (showFromDatePicker) {
-        setFromDate(date);
-        setShowFromDatePicker(false);
-      }
-      if (showToDatePicker) {
-        setToDate(date);
-        setShowToDatePicker(false);
-      }
-    } else {
-      setShowFromDatePicker(false);
-      setShowToDatePicker(false);
+  const renderProductItem = ({ item }: { item: Product }) => {
+    let statusColor = '#4CAF50'; // in_stock
+    let statusText = 'In Stock';
+    
+    if (item.status === 'low_stock') {
+      statusColor = '#FF9800';
+      statusText = 'Low Stock';
+    } else if (item.status === 'out_of_stock') {
+      statusColor = '#F44336';
+      statusText = 'Out of Stock';
     }
+
+    return (
+      <View style={styles.productRow}>
+        <View style={styles.productInfo}>
+          <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.productCategory}>{item.category} • {item.subCategory}</Text>
+        </View>
+        <View style={styles.quantityContainer}>
+          <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
+            <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
+          </View>
+          <View style={styles.quantityWrapper}>
+            <Text style={[
+              styles.quantityText, 
+              { color: statusColor }
+            ]}>
+              {item.quantity}
+            </Text>
+            <Text style={styles.unitText}>{item.unit}</Text>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -269,10 +366,10 @@ const StockReport: React.FC = () => {
         <Text style={styles.headerTitle}>Stock Report</Text>
         <TouchableOpacity onPress={generatePDF} disabled={loading} style={styles.downloadButton}>
           {loading ? (
-            <ActivityIndicator size="small" color="#4CAF50" />
+            <ActivityIndicator size="small" color="#27ae60" />
           ) : (
             <>
-              <Feather name="download" size={20} color="#4CAF50" />
+              <Feather name="download" size={20} color="#27ae60" />
               <Text style={styles.downloadText}>PDF</Text>
             </>
           )}
@@ -280,64 +377,73 @@ const StockReport: React.FC = () => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Filters Section */}
+        {/* Filters Section - Updated like admin */}
         <View style={styles.filterSection}>
-          <Text style={styles.filterTitle}>Filters</Text>
+          <Text style={styles.filterTitle}>Advanced Filters</Text>
           <Text style={styles.filterSubtitle}>All fields are mandatory</Text>
           
-          {/* Date Range */}
-          <View style={styles.dateRow}>
+          {/* Date Range Inputs */}
+          <View style={styles.dateInputRow}>
             <View style={styles.dateInputContainer}>
-              <Text style={styles.dateLabel}>From Date & Time *</Text>
-              <TouchableOpacity 
+              <Text style={styles.inputLabel}>From Date *</Text>
+              <TouchableOpacity
                 style={styles.dateInput}
                 onPress={() => setShowFromDatePicker(true)}
               >
-                <Text style={styles.dateText}>{fromDate.toLocaleDateString()}</Text>
-                <MaterialIcons name="calendar-today" size={20} color="#666" />
+                <Text style={styles.dateInputText}>{formatDate(fromDate)}</Text>
+                <Text style={styles.calendarIcon}>📅</Text>
               </TouchableOpacity>
+              {showFromDatePicker && (
+                <DateTimePicker
+                  value={fromDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleFromDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
             </View>
             
             <View style={styles.dateInputContainer}>
-              <Text style={styles.dateLabel}>To Date & Time *</Text>
-              <TouchableOpacity 
+              <Text style={styles.inputLabel}>To Date *</Text>
+              <TouchableOpacity
                 style={styles.dateInput}
                 onPress={() => setShowToDatePicker(true)}
               >
-                <Text style={styles.dateText}>{toDate.toLocaleDateString()}</Text>
-                <MaterialIcons name="calendar-today" size={20} color="#666" />
+                <Text style={styles.dateInputText}>{formatDate(toDate)}</Text>
+                <Text style={styles.calendarIcon}>📅</Text>
               </TouchableOpacity>
-            </View>
-          </View>
-
-          {(showFromDatePicker || showToDatePicker) && (
-            <View>
-              {showFromDatePicker && (
-                <Text>From Date Picker - Implement date picker component</Text>
-              )}
               {showToDatePicker && (
-                <Text>To Date Picker - Implement date picker component</Text>
+                <DateTimePicker
+                  value={toDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleToDateChange}
+                  minimumDate={fromDate}
+                  maximumDate={new Date()}
+                />
               )}
             </View>
-          )}
-
-          {/* Order Status Multi-select */}
-          <View style={styles.statusSection}>
-            <Text style={styles.statusLabel}>Stock Status *</Text>
-            <View style={styles.checkboxGrid}>
-              {selectedStatuses.map((status) => (
-                <View key={status.id} style={styles.checkboxItem}>
-                  <TouchableOpacity
-                    style={[styles.customCheckbox, status.checked && styles.customCheckboxChecked]}
-                    onPress={() => handleStatusToggle(status.id)}
-                  >
-                    {status.checked && <MaterialIcons name="check" size={14} color="#fff" />}
-                  </TouchableOpacity>
-                  <Text style={styles.checkboxLabel}>{status.label}</Text>
-                </View>
-              ))}
-            </View>
           </View>
+
+          {/* Stock Status Dropdown - Updated like admin */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Stock Status (Multi-select) *</Text>
+            <TouchableOpacity
+              style={styles.dropdownInput}
+              onPress={() => setShowStatusModal(true)}
+            >
+              <Text style={styles.dropdownText}>
+                {getStatusNames()}
+              </Text>
+              <Text style={styles.dropdownIcon}>▼</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Apply Filters Button */}
+          <TouchableOpacity style={styles.applyButton} onPress={handleApplyFilters}>
+            <Text style={styles.applyButtonText}>Apply Filters</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Categories Section */}
@@ -354,7 +460,7 @@ const StockReport: React.FC = () => {
                 Results ({filteredProducts.length} products)
               </Text>
               <Text style={styles.resultsSubtitle}>
-                Showing stock as of {new Date().toLocaleDateString()}
+                Showing stock from {formatDate(fromDate)} to {formatDate(toDate)}
               </Text>
             </View>
             <View style={styles.totalStockBadge}>
@@ -373,12 +479,12 @@ const StockReport: React.FC = () => {
             {/* Right: Products Table */}
             <View style={styles.productsColumn}>
               <View style={styles.tableHeader}>
-                <Text style={styles.columnHeader}>Product Name</Text>
-                <Text style={styles.columnHeader}>Quantity</Text>
+                <Text style={styles.columnHeader}>Product Details</Text>
+                <Text style={styles.columnHeader}>Status & Quantity</Text>
               </View>
               
               {loading ? (
-                <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
+                <ActivityIndicator size="large" color="#27ae60" style={styles.loader} />
               ) : filteredProducts.length > 0 ? (
                 <FlatList
                   data={filteredProducts}
@@ -406,19 +512,60 @@ const StockReport: React.FC = () => {
           <View style={styles.legendItems}>
             <View style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
-              <Text style={styles.legendText}>In Stock (≥20)</Text>
+              <Text style={styles.legendText}>In Stock (≥20 units)</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
-              <Text style={styles.legendText}>Low Stock (1-19)</Text>
+              <Text style={styles.legendText}>Low Stock (1-19 units)</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
-              <Text style={styles.legendText}>Out of Stock (0)</Text>
+              <Text style={styles.legendText}>Out of Stock (0 units)</Text>
             </View>
           </View>
         </View>
       </ScrollView>
+
+      {/* Status Selection Modal - Like admin */}
+      <Modal
+        visible={showStatusModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowStatusModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Stock Status</Text>
+              <TouchableOpacity onPress={() => setShowStatusModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={selectedStatuses}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => handleStatusToggle(item.id)}
+                >
+                  <Checkbox 
+                    checked={item.checked} 
+                    onPress={() => handleStatusToggle(item.id)}
+                  />
+                  <Text style={styles.modalItemText}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+              keyExtractor={item => item.id}
+            />
+            <TouchableOpacity
+              style={styles.modalDoneButton}
+              onPress={() => setShowStatusModal(false)}
+            >
+              <Text style={styles.modalDoneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -426,59 +573,64 @@ const StockReport: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 60,
+    paddingBottom: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
   },
   backButton: {
-    padding: 4,
+    padding: 8,
+  },
+  backButtonText: {
+    color: '#27ae60',
+    fontSize: 16,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2c3e50',
   },
   downloadButton: {
+    backgroundColor: '#E8F5E9',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: '#E8F5E9',
+    gap: 4,
   },
   downloadText: {
-    fontSize: 12,
+    color: '#27ae60',
+    fontSize: 14,
     fontWeight: '600',
-    color: '#4CAF50',
   },
   content: {
     flex: 1,
+    padding: 16,
   },
   filterSection: {
     backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   filterTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2c3e50',
     marginBottom: 4,
   },
   filterSubtitle: {
@@ -486,83 +638,88 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 16,
   },
-  dateRow: {
+  dateInputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   dateInputContainer: {
     flex: 1,
+    marginHorizontal: 4,
   },
-  dateLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-    fontWeight: '500',
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 8,
   },
   dateInput: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#e0e0e0',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fafafa',
+    paddingVertical: 12,
   },
-  dateText: {
+  dateInputText: {
     fontSize: 14,
-    color: '#333',
+    color: '#2c3e50',
   },
-  statusSection: {
-    marginBottom: 8,
+  calendarIcon: {
+    fontSize: 16,
   },
-  statusLabel: {
+  dropdownInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#2c3e50',
+  },
+  dropdownIcon: {
     fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-    fontWeight: '500',
+    color: '#7f8c8d',
   },
-  checkboxGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  checkboxItem: {
-    flexDirection: 'row',
+  applyButton: {
+    backgroundColor: '#27ae60',
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 8,
-    minWidth: 100,
+    marginTop: 8,
   },
-  customCheckbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  customCheckboxChecked: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  checkboxLabel: {
-    fontSize: 14,
-    color: '#333',
+  applyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   categoriesSection: {
     backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2c3e50',
     marginBottom: 12,
   },
   categoryTabs: {
@@ -581,7 +738,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeCategoryTab: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#27ae60',
   },
   categoryTabText: {
     fontSize: 14,
@@ -593,11 +750,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resultsSection: {
-    flex: 1,
     backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   resultsHeader: {
     flexDirection: 'row',
@@ -624,7 +785,7 @@ const styles = StyleSheet.create({
   },
   totalStockText: {
     fontSize: 10,
-    color: '#4CAF50',
+    color: '#27ae60',
     fontWeight: '600',
     marginBottom: 2,
   },
@@ -666,7 +827,7 @@ const styles = StyleSheet.create({
   },
   activeSubCategory: {
     backgroundColor: '#E8F5E9',
-    borderColor: '#4CAF50',
+    borderColor: '#27ae60',
     borderWidth: 1,
   },
   subCategoryText: {
@@ -675,7 +836,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activeSubCategoryText: {
-    color: '#2E7D32',
+    color: '#27ae60',
     fontWeight: '600',
   },
   productsColumn: {
@@ -710,32 +871,42 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  productName: {
+  productInfo: {
     flex: 2,
+    paddingRight: 8,
+  },
+  productName: {
     fontSize: 14,
     color: '#333',
-    paddingRight: 8,
     fontWeight: '500',
+    marginBottom: 4,
+  },
+  productCategory: {
+    fontSize: 12,
+    color: '#666',
   },
   quantityContainer: {
     flex: 1,
+    alignItems: 'flex-end',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  quantityWrapper: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    justifyContent: 'flex-end',
   },
   quantityText: {
     fontSize: 16,
     fontWeight: 'bold',
     marginRight: 4,
-  },
-  inStockText: {
-    color: '#4CAF50',
-  },
-  lowStockText: {
-    color: '#FF9800',
-  },
-  outOfStockText: {
-    color: '#F44336',
   },
   unitText: {
     fontSize: 12,
@@ -762,10 +933,14 @@ const styles = StyleSheet.create({
   },
   legendSection: {
     backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 16,
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   legendTitle: {
     fontSize: 14,
@@ -792,6 +967,77 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: '#666',
+  },
+  // Modal styles like admin
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  modalClose: {
+    fontSize: 20,
+    color: '#7f8c8d',
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    marginLeft: 12,
+  },
+  modalDoneButton: {
+    backgroundColor: '#27ae60',
+    margin: 16,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalDoneButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Checkbox styles
+  checkbox: {
+    marginRight: 12,
+  },
+  checkboxInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#3498db',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#3498db',
+    borderColor: '#3498db',
   },
 });
 
