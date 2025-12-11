@@ -23,6 +23,8 @@ interface QuantityOption {
   unit: 'pcs' | 'g' | 'kg' | 'bunch' | 'dozen';
   sameDayPrice: number;
   nextDayPrice: number;
+  sameDayActualPrice: number; // Added: Actual price for same day
+  nextDayActualPrice: number; // Added: Actual price for next day
   sameDayAvailable: boolean;
   nextDayAvailable: boolean;
   sameAsNextDay: boolean;
@@ -53,8 +55,10 @@ const MyList: React.FC = () => {
           type: 'Small Pack',
           value: 250,
           unit: 'g',
-          sameDayPrice: 15,
-          nextDayPrice: 14,
+          sameDayPrice: 15, // Sale price
+          nextDayPrice: 14, // Sale price
+          sameDayActualPrice: 20, // Actual price
+          nextDayActualPrice: 18, // Actual price
           sameDayAvailable: true,
           nextDayAvailable: true,
           sameAsNextDay: false,
@@ -63,8 +67,10 @@ const MyList: React.FC = () => {
           type: 'Medium Pack',
           value: 500,
           unit: 'g',
-          sameDayPrice: 25,
-          nextDayPrice: 20,
+          sameDayPrice: 25, // Sale price
+          nextDayPrice: 20, // Sale price
+          sameDayActualPrice: 30, // Actual price
+          nextDayActualPrice: 25, // Actual price
           sameDayAvailable: true,
           nextDayAvailable: true,
           sameAsNextDay: false,
@@ -73,8 +79,10 @@ const MyList: React.FC = () => {
           type: 'Large Pack',
           value: 1,
           unit: 'kg',
-          sameDayPrice: 40,
-          nextDayPrice: 35,
+          sameDayPrice: 40, // Sale price
+          nextDayPrice: 35, // Sale price
+          sameDayActualPrice: 50, // Actual price
+          nextDayActualPrice: 45, // Actual price
           sameDayAvailable: true,
           nextDayAvailable: false,
           sameAsNextDay: false,
@@ -93,8 +101,10 @@ const MyList: React.FC = () => {
           type: 'Half Kg',
           value: 0.5,
           unit: 'kg',
-          sameDayPrice: 60,
-          nextDayPrice: 55,
+          sameDayPrice: 60, // Sale price
+          nextDayPrice: 55, // Sale price
+          sameDayActualPrice: 75, // Actual price
+          nextDayActualPrice: 70, // Actual price
           sameDayAvailable: true,
           nextDayAvailable: true,
           sameAsNextDay: true,
@@ -103,8 +113,10 @@ const MyList: React.FC = () => {
           type: 'One Kg',
           value: 1,
           unit: 'kg',
-          sameDayPrice: 120,
-          nextDayPrice: 120,
+          sameDayPrice: 120, // Sale price
+          nextDayPrice: 120, // Sale price
+          sameDayActualPrice: 150, // Actual price
+          nextDayActualPrice: 150, // Actual price
           sameDayAvailable: true,
           nextDayAvailable: true,
           sameAsNextDay: true,
@@ -132,6 +144,12 @@ const MyList: React.FC = () => {
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Calculate discount percentage
+  const calculateDiscount = (actualPrice: number, salePrice: number): number => {
+    if (salePrice >= actualPrice) return 0;
+    return Math.round(((actualPrice - salePrice) / actualPrice) * 100);
+  };
 
   const handleEditPrice = (item: MyListItem, optionIndex: number) => {
     setEditingItem(item);
@@ -164,12 +182,10 @@ const MyList: React.FC = () => {
     if (editingOption) {
       const updatedOption = { ...editingOption };
       if (updatedOption.sameAsNextDay) {
-        // If turning off same as next day, keep the current same day values
-        // But mark them as different
         updatedOption.sameAsNextDay = false;
       } else {
-        // If turning on same as next day, copy next day values to same day
         updatedOption.sameDayPrice = updatedOption.nextDayPrice;
+        updatedOption.sameDayActualPrice = updatedOption.nextDayActualPrice;
         updatedOption.sameDayAvailable = updatedOption.nextDayAvailable;
         updatedOption.sameAsNextDay = true;
       }
@@ -211,6 +227,8 @@ const MyList: React.FC = () => {
       unit: 'kg',
       sameDayPrice: 0,
       nextDayPrice: 0,
+      sameDayActualPrice: 0,
+      nextDayActualPrice: 0,
       sameDayAvailable: true,
       nextDayAvailable: true,
       sameAsNextDay: true,
@@ -226,7 +244,6 @@ const MyList: React.FC = () => {
       return item;
     }));
 
-    // Find the item and set editing state
     const item = items.find(i => i.id === itemId);
     if (item) {
       setEditingItem(item);
@@ -258,63 +275,84 @@ const MyList: React.FC = () => {
 
       <View style={styles.quantityOptions}>
         <Text style={styles.optionsTitle}>Quantity Options</Text>
-        {item.quantityOptions.map((option, index) => (
-          <View key={index} style={styles.optionRow}>
-            <View style={styles.optionDetails}>
-              <Text style={styles.optionType}>
-                {option.type} ({option.value}
-                {option.unit === 'g' ? 'g' : 
-                 option.unit === 'kg' ? 'kg' : 
-                 option.unit === 'bunch' ? 'bunch' : 
-                 option.unit === 'dozen' ? 'dozen' : 'pcs'})
-              </Text>
-              
-              <View style={styles.prices}>
-                <View style={styles.priceSection}>
-                  <Text style={styles.priceLabel}>Same Day:</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceValue}>₹{option.sameDayPrice}</Text>
-                    <Text style={[
-                      styles.availability,
-                      { color: option.sameDayAvailable ? '#4CAF50' : '#f44336' }
-                    ]}>
-                      {option.sameDayAvailable ? '✓ Available' : '✗ Unavailable'}
-                    </Text>
-                  </View>
-                </View>
+        {item.quantityOptions.map((option, index) => {
+          const sameDayDiscount = calculateDiscount(option.sameDayActualPrice, option.sameDayPrice);
+          const nextDayDiscount = calculateDiscount(option.nextDayActualPrice, option.nextDayPrice);
+          
+          return (
+            <View key={index} style={styles.optionRow}>
+              <View style={styles.optionDetails}>
+                <Text style={styles.optionType}>
+                  {option.type} ({option.value}
+                  {option.unit === 'g' ? 'g' : 
+                   option.unit === 'kg' ? 'kg' : 
+                   option.unit === 'bunch' ? 'bunch' : 
+                   option.unit === 'dozen' ? 'dozen' : 'pcs'})
+                </Text>
                 
-                <View style={styles.priceSection}>
-                  <Text style={styles.priceLabel}>Next Day:</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceValue}>₹{option.nextDayPrice}</Text>
-                    <Text style={[
-                      styles.availability,
-                      { color: option.nextDayAvailable ? '#4CAF50' : '#f44336' }
-                    ]}>
-                      {option.nextDayAvailable ? '✓ Available' : '✗ Unavailable'}
-                    </Text>
+                <View style={styles.prices}>
+                  <View style={styles.priceSection}>
+                    <Text style={styles.priceLabel}>Same Day:</Text>
+                    <View style={styles.priceRow}>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.actualPrice}>₹{option.sameDayActualPrice}</Text>
+                        <Text style={styles.salePrice}>₹{option.sameDayPrice}</Text>
+                        {sameDayDiscount > 0 && (
+                          <Text style={styles.discountBadge}>
+                            {sameDayDiscount}% OFF
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[
+                        styles.availability,
+                        { color: option.sameDayAvailable ? '#4CAF50' : '#f44336' }
+                      ]}>
+                        {option.sameDayAvailable ? '✓ Available' : '✗ Unavailable'}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.priceSection}>
+                    <Text style={styles.priceLabel}>Next Day:</Text>
+                    <View style={styles.priceRow}>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.actualPrice}>₹{option.nextDayActualPrice}</Text>
+                        <Text style={styles.salePrice}>₹{option.nextDayPrice}</Text>
+                        {nextDayDiscount > 0 && (
+                          <Text style={styles.discountBadge}>
+                            {nextDayDiscount}% OFF
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[
+                        styles.availability,
+                        { color: option.nextDayAvailable ? '#4CAF50' : '#f44336' }
+                      ]}>
+                        {option.nextDayAvailable ? '✓ Available' : '✗ Unavailable'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-            
-            <View style={styles.optionActions}>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={() => handleEditPrice(item, index)}
-              >
-                <MaterialIcons name="edit" size={20} color="#2196F3" />
-              </TouchableOpacity>
               
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteOption(item.id, index)}
-              >
-                <MaterialIcons name="delete" size={20} color="#f44336" />
-              </TouchableOpacity>
+              <View style={styles.optionActions}>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => handleEditPrice(item, index)}
+                >
+                  <MaterialIcons name="edit" size={20} color="#2196F3" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteOption(item.id, index)}
+                >
+                  <MaterialIcons name="delete" size={20} color="#f44336" />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
         
         <TouchableOpacity
           style={styles.addOptionButton}
@@ -435,9 +473,28 @@ const MyList: React.FC = () => {
                     />
                   </View>
 
-                  {/* Same Day Price */}
+                  {/* Same Day Prices */}
+                  <Text style={styles.sectionTitle}>Same Day Pricing</Text>
+                  
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Same Day Price (₹)</Text>
+                    <Text style={styles.inputLabel}>Actual Price (₹)</Text>
+                    <TextInput
+                      style={[styles.input, editingOption.sameAsNextDay && styles.inputDisabled]}
+                      value={editingOption.sameDayActualPrice.toString()}
+                      onChangeText={(value) => {
+                        const numValue = parseInt(value) || 0;
+                        setEditingOption({
+                          ...editingOption,
+                          sameDayActualPrice: numValue,
+                        });
+                      }}
+                      keyboardType="numeric"
+                      editable={!editingOption.sameAsNextDay}
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Sale Price (₹)</Text>
                     <TextInput
                       style={[styles.input, editingOption.sameAsNextDay && styles.inputDisabled]}
                       value={editingOption.sameDayPrice.toString()}
@@ -453,9 +510,28 @@ const MyList: React.FC = () => {
                     />
                   </View>
 
-                  {/* Next Day Price */}
+                  {/* Next Day Prices */}
+                  <Text style={styles.sectionTitle}>Next Day Pricing</Text>
+                  
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Next Day Price (₹)</Text>
+                    <Text style={styles.inputLabel}>Actual Price (₹)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={editingOption.nextDayActualPrice.toString()}
+                      onChangeText={(value) => {
+                        const numValue = parseInt(value) || 0;
+                        const updatedOption = { ...editingOption, nextDayActualPrice: numValue };
+                        if (editingOption.sameAsNextDay) {
+                          updatedOption.sameDayActualPrice = numValue;
+                        }
+                        setEditingOption(updatedOption);
+                      }}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Sale Price (₹)</Text>
                     <TextInput
                       style={styles.input}
                       value={editingOption.nextDayPrice.toString()}
@@ -473,6 +549,7 @@ const MyList: React.FC = () => {
 
                   {/* Availability Toggles */}
                   <View style={styles.availabilityContainer}>
+                    <Text style={styles.sectionTitle}>Availability</Text>
                     <View style={styles.availabilityToggle}>
                       <Text style={styles.availabilityLabel}>Same Day Available</Text>
                       <Switch
@@ -713,10 +790,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  priceValue: {
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actualPrice: {
+    fontSize: 12,
+    color: '#999',
+    textDecorationLine: 'line-through',
+  },
+  salePrice: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#4CAF50',
+  },
+  discountBadge: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+    backgroundColor: '#ff5252',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   availability: {
     fontSize: 12,
@@ -816,8 +912,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 12,
+    marginBottom: 8,
+  },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   inputLabel: {
     fontSize: 14,
@@ -840,7 +943,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   availabilityContainer: {
-    gap: 16,
+    gap: 12,
   },
   availabilityToggle: {
     flexDirection: 'row',

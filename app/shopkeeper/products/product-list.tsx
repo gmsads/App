@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  RefreshControl,
+  Modal,
   Switch,
 } from 'react-native';
 
@@ -18,139 +18,301 @@ import {
 import { useRouter } from 'expo-router';
 
 // Import icon libraries
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 
 // ==============================================
 // TYPE DEFINITIONS
 // ==============================================
 
-// Define the Product type
-type Product = {
+// Define the QuantityOption type for table view
+type QuantityOption = {
+  quantity: string;
+  unit: string;
+  actualPrice: number;
+  salePrice: number;
+  discountPercent: number;
+  isEnabled: boolean;
+  isOutOfStock: boolean;
+};
+
+// Define the TableProduct type for table view
+type TableProduct = {
   id: string;
   name: string;
   category: string;
-  price: number;
-  quantity: string;
-  inStock: boolean;
-  isActive: boolean;
-  sameDayPrice?: number;
-  nextDayPrice?: number;
-  quantityTypes?: string[];
-  status?: 'approved' | 'pending' | 'rejected';
+  sameDayOptions: QuantityOption[];
+  nextDayOptions: QuantityOption[];
 };
 
 // ==============================================
-// PRODUCT LIST COMPONENT
+// PRODUCT LIST COMPONENT (TABLE VIEW ONLY)
 // ==============================================
 const ProductList: React.FC = () => {
   // Initialize router for navigation
   const router = useRouter();
   
   // State for products data
-  const [products, setProducts] = useState<Product[]>([
+  const [products, setProducts] = useState<TableProduct[]>([
     {
       id: '1',
       name: 'Fresh Tomatoes',
       category: 'vegetables',
-      price: 40,
-      quantity: '1 kg',
-      inStock: true,
-      isActive: true,
-      sameDayPrice: 45,
-      nextDayPrice: 40,
-      quantityTypes: ['250g', '500g', '1kg'],
-      status: 'approved',
+      sameDayOptions: [
+        { 
+          quantity: '1', 
+          unit: 'kg', 
+          actualPrice: 80, 
+          salePrice: 40, 
+          discountPercent: 50, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '500', 
+          unit: 'g', 
+          actualPrice: 60, 
+          salePrice: 45, 
+          discountPercent: 25, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '250', 
+          unit: 'g', 
+          actualPrice: 20, 
+          salePrice: 20, 
+          discountPercent: 0, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
+      nextDayOptions: [
+        { 
+          quantity: '1', 
+          unit: 'kg', 
+          actualPrice: 75, 
+          salePrice: 38, 
+          discountPercent: 49, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '500', 
+          unit: 'g', 
+          actualPrice: 55, 
+          salePrice: 40, 
+          discountPercent: 27, 
+          isEnabled: false, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '250', 
+          unit: 'g', 
+          actualPrice: 18, 
+          salePrice: 18, 
+          discountPercent: 0, 
+          isEnabled: true, 
+          isOutOfStock: true 
+        },
+      ],
     },
     {
       id: '2',
       name: 'Organic Apples',
       category: 'fruits',
-      price: 120,
-      quantity: '1 kg',
-      inStock: true,
-      isActive: true,
-      sameDayPrice: 125,
-      nextDayPrice: 120,
-      quantityTypes: ['500g', '1kg', '2kg'],
-      status: 'approved',
+      sameDayOptions: [
+        { 
+          quantity: '2', 
+          unit: 'kg', 
+          actualPrice: 200, 
+          salePrice: 160, 
+          discountPercent: 20, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '1', 
+          unit: 'kg', 
+          actualPrice: 120, 
+          salePrice: 100, 
+          discountPercent: 17, 
+          isEnabled: true, 
+          isOutOfStock: true 
+        },
+        { 
+          quantity: '500', 
+          unit: 'g', 
+          actualPrice: 70, 
+          salePrice: 60, 
+          discountPercent: 14, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
+      nextDayOptions: [
+        { 
+          quantity: '2', 
+          unit: 'kg', 
+          actualPrice: 180, 
+          salePrice: 150, 
+          discountPercent: 17, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '1', 
+          unit: 'kg', 
+          actualPrice: 110, 
+          salePrice: 90, 
+          discountPercent: 18, 
+          isEnabled: false, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '500', 
+          unit: 'g', 
+          actualPrice: 65, 
+          salePrice: 55, 
+          discountPercent: 15, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
     },
     {
       id: '3',
-      name: 'Fresh Potatoes',
-      category: 'vegetables',
-      price: 35,
-      quantity: '1 kg',
-      inStock: false,
-      isActive: true,
-      sameDayPrice: 40,
-      nextDayPrice: 35,
-      quantityTypes: ['1kg', '2kg', '5kg'],
-      status: 'approved',
+      name: 'Fresh Milk',
+      category: 'dairy',
+      sameDayOptions: [
+        { 
+          quantity: '1', 
+          unit: 'litre', 
+          actualPrice: 60, 
+          salePrice: 55, 
+          discountPercent: 8, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '500', 
+          unit: 'ml', 
+          actualPrice: 35, 
+          salePrice: 32, 
+          discountPercent: 9, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
+      nextDayOptions: [
+        { 
+          quantity: '1', 
+          unit: 'litre', 
+          actualPrice: 58, 
+          salePrice: 52, 
+          discountPercent: 10, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '500', 
+          unit: 'ml', 
+          actualPrice: 33, 
+          salePrice: 30, 
+          discountPercent: 9, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
     },
     {
       id: '4',
-      name: 'Milk',
-      category: 'dairy',
-      price: 60,
-      quantity: '1 litre',
-      inStock: true,
-      isActive: false,
-      sameDayPrice: 65,
-      nextDayPrice: 60,
-      quantityTypes: ['500ml', '1l', '2l'],
-      status: 'approved',
+      name: 'Basmati Rice',
+      category: 'grains',
+      sameDayOptions: [
+        { 
+          quantity: '5', 
+          unit: 'kg', 
+          actualPrice: 500, 
+          salePrice: 450, 
+          discountPercent: 10, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '1', 
+          unit: 'kg', 
+          actualPrice: 110, 
+          salePrice: 100, 
+          discountPercent: 9, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
+      nextDayOptions: [
+        { 
+          quantity: '5', 
+          unit: 'kg', 
+          actualPrice: 480, 
+          salePrice: 430, 
+          discountPercent: 10, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '1', 
+          unit: 'kg', 
+          actualPrice: 105, 
+          salePrice: 95, 
+          discountPercent: 10, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
     },
     {
       id: '5',
-      name: 'Rice',
-      category: 'grains',
-      price: 90,
-      quantity: '1 kg',
-      inStock: true,
-      isActive: true,
-      sameDayPrice: 95,
-      nextDayPrice: 90,
-      quantityTypes: ['1kg', '2kg', '5kg'],
-      status: 'approved',
-    },
-    {
-      id: '6',
-      name: 'Bread',
-      category: 'bakery',
-      price: 35,
-      quantity: '1 pack',
-      inStock: false,
-      isActive: true,
-      sameDayPrice: 40,
-      nextDayPrice: 35,
-      quantityTypes: ['1 pack', '2 packs'],
-      status: 'approved',
-    },
-    {
-      id: '7',
-      name: 'Eggs',
+      name: 'Fresh Eggs',
       category: 'dairy',
-      price: 80,
-      quantity: '1 dozen',
-      inStock: true,
-      isActive: true,
-      sameDayPrice: 85,
-      nextDayPrice: 80,
-      quantityTypes: ['6 pcs', '12 pcs'],
-      status: 'approved',
-    },
-    {
-      id: '8',
-      name: 'Onions',
-      category: 'vegetables',
-      price: 30,
-      quantity: '1 kg',
-      inStock: true,
-      isActive: false,
-      sameDayPrice: 35,
-      nextDayPrice: 30,
-      quantityTypes: ['250g', '500g', '1kg'],
-      status: 'approved',
+      sameDayOptions: [
+        { 
+          quantity: '12', 
+          unit: 'pcs', 
+          actualPrice: 80, 
+          salePrice: 70, 
+          discountPercent: 13, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '6', 
+          unit: 'pcs', 
+          actualPrice: 45, 
+          salePrice: 40, 
+          discountPercent: 11, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
+      nextDayOptions: [
+        { 
+          quantity: '12', 
+          unit: 'pcs', 
+          actualPrice: 78, 
+          salePrice: 68, 
+          discountPercent: 13, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+        { 
+          quantity: '6', 
+          unit: 'pcs', 
+          actualPrice: 43, 
+          salePrice: 38, 
+          discountPercent: 12, 
+          isEnabled: true, 
+          isOutOfStock: false 
+        },
+      ],
     },
   ]);
   
@@ -160,326 +322,274 @@ const ProductList: React.FC = () => {
   // State for category filtering
   const [selectedCategory, setSelectedCategory] = useState('all');
   
-  // State for pull-to-refresh
-  const [refreshing, setRefreshing] = useState(false);
+  // State for selected product in edit modal
+  const [selectedProduct, setSelectedProduct] = useState<TableProduct | null>(null);
   
-  // Define categories with icons and counts
+  // State for edit modal visibility
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  
+  // State for which options are being edited (sameDay or nextDay)
+  const [editOptionsType, setEditOptionsType] = useState<'sameDay' | 'nextDay'>('sameDay');
+  
+  // Define categories for filtering
   const categories = [
-    { id: 'all', name: 'All Products', icon: 'grid-outline' as const, count: products.length },
-    { id: 'vegetables', name: 'Vegetables', icon: 'leaf-outline' as const, count: 3 },
-    { id: 'fruits', name: 'Fruits', icon: 'nutrition-outline' as const, count: 1 },
-    { id: 'dairy', name: 'Dairy', icon: 'egg-outline' as const, count: 2 },
-    { id: 'grains', name: 'Grains', icon: 'fast-food-outline' as const, count: 1 },
-    { id: 'bakery', name: 'Bakery', icon: 'restaurant-outline' as const, count: 1 },
+    { id: 'all', name: 'All', count: 5, icon: 'grid-outline' as const },
+    { id: 'vegetables', name: 'Vegetables', count: 1, icon: 'leaf-outline' as const },
+    { id: 'fruits', name: 'Fruits', count: 1, icon: 'nutrition-outline' as const },
+    { id: 'dairy', name: 'Dairy', count: 2, icon: 'egg-outline' as const },
+    { id: 'grains', name: 'Grains', count: 1, icon: 'fast-food-outline' as const },
   ];
 
-  // Filter products based on search query and selected category
+  // Filter products based on search and category
   const filteredProducts = products.filter(product => {
-    // Check if product name matches search query (case insensitive)
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Check if product category matches selected category
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    
-    // Return products that match both conditions
     return matchesSearch && matchesCategory;
   });
 
-  // Update category counts based on filtered data
-  const getCategoryCounts = () => {
-    const counts: { [key: string]: number } = { all: products.length };
-    categories.forEach(cat => {
-      if (cat.id !== 'all') {
-        counts[cat.id] = products.filter(p => p.category === cat.id).length;
-      }
-    });
-    return counts;
-  };
-
-  const categoryCounts = getCategoryCounts();
-
-  // Handle pull-to-refresh action
-  const onRefresh = () => {
-    setRefreshing(true);
-    // Simulate API call with timeout
-    setTimeout(() => setRefreshing(false), 1000);
-  };
-
-  // Toggle product active status
-  const handleToggleActive = (productId: string) => {
+  // Toggle enable/disable for an option
+  const handleEnableToggle = (
+    productId: string, 
+    optionType: 'sameDay' | 'nextDay', 
+    optionIndex: number
+  ) => {
     setProducts(prev => prev.map(product => {
       if (product.id === productId) {
-        const newStatus = !product.isActive;
-        Alert.alert(
-          newStatus ? 'Product Activated' : 'Product Deactivated',
-          `"${product.name}" has been ${newStatus ? 'activated' : 'deactivated'}`,
-          [{ text: 'OK' }]
-        );
-        return { ...product, isActive: newStatus };
+        // Get the options array based on type
+        const options = optionType === 'sameDay' 
+          ? product.sameDayOptions 
+          : product.nextDayOptions;
+        
+        // Create a copy of the options array
+        const updatedOptions = [...options];
+        
+        // Toggle the enabled state
+        updatedOptions[optionIndex] = {
+          ...updatedOptions[optionIndex],
+          isEnabled: !updatedOptions[optionIndex].isEnabled
+        };
+        
+        // Return updated product
+        return {
+          ...product,
+          [optionType === 'sameDay' ? 'sameDayOptions' : 'nextDayOptions']: updatedOptions
+        };
       }
       return product;
     }));
   };
 
-  // Navigate to edit product
-  const handleEditProduct = (product: Product) => {
-    router.push({
-      pathname: '/shopkeeper/products/add-product',
-      params: {
-        productId: product.id,
-        productName: product.name,
-        category: product.category,
-      }
-    });
+  // Open edit modal for a product's options
+  const handleEditOptions = (product: TableProduct, type: 'sameDay' | 'nextDay') => {
+    setSelectedProduct(product);
+    setEditOptionsType(type);
+    setEditModalVisible(true);
   };
 
-  // Render the product list
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>My Products</Text>
-          <Text style={styles.headerSubtitle}>Manage your product listings</Text>
-        </View>
-        <View style={styles.headerStats}>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{filteredProducts.length}</Text>
-            <Text style={styles.statLabel}>Active</Text>
-          </View>
-        </View>
-      </View>
+  // Save edited options
+  const handleSaveEdit = () => {
+    if (!selectedProduct) return;
+    
+    // Update products state with edited product
+    setProducts(prev => prev.map(product => 
+      product.id === selectedProduct.id ? selectedProduct : product
+    ));
+    
+    // Close modal and show success message
+    setEditModalVisible(false);
+    Alert.alert('Success', 'Prices updated successfully!');
+  };
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        {/* Search icon */}
-        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-        
-        {/* Search input field */}
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search products by name..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        
-        {/* Clear search button (shown only when there's text) */}
-        {searchQuery ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#999" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
-
-      {/* Category Filter Horizontal Scroll */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.categoryContainer}
-        contentContainerStyle={styles.categoryContent}
-      >
-        {categories.map(category => (
-          <TouchableOpacity
-            key={category.id}
+  // Render options column with toggle switches
+  const renderOptionsColumn = (
+    options: QuantityOption[], 
+    type: 'sameDay' | 'nextDay', 
+    productId: string
+  ) => (
+    <View style={styles.optionsColumn}>
+      {options.map((option, index) => (
+        <View key={index}>
+          <View 
             style={[
-              styles.categoryButton, 
-              selectedCategory === category.id && styles.categoryButtonActive
+              styles.optionBox,
+              option.isOutOfStock && styles.outOfStockBox,
+              !option.isEnabled && styles.disabledBox
             ]}
-            onPress={() => setSelectedCategory(category.id)}
           >
-            {/* Category icon */}
-            <Ionicons
-              name={category.icon}
-              size={16}
-              color={selectedCategory === category.id ? '#fff' : '#666'}
-            />
+            {/* Option Header - Just Toggle */}
+            <View style={styles.optionHeader}>
+              <Switch
+                value={option.isEnabled}
+                onValueChange={() => handleEnableToggle(productId, type, index)}
+                trackColor={{ false: '#ddd', true: '#4CAF50' }}
+                thumbColor="#fff"
+              />
+            </View>
             
-            {/* Category name */}
-            <Text style={[
-              styles.categoryText, 
-              selectedCategory === category.id && styles.categoryTextActive
-            ]}>
-              {category.name}
-            </Text>
-            
-            {/* Product count in category */}
-            <View style={[
-              styles.categoryCount,
-              selectedCategory === category.id && styles.categoryCountActive
-            ]}>
-              <Text style={[
-                styles.countText, 
-                selectedCategory === category.id && styles.countTextActive
-              ]}>
-                {categoryCounts[category.id] || 0}
+            {/* Option Details */}
+            <View style={styles.optionDetails}>
+              <Text style={styles.quantityText}>
+                {option.quantity}{option.unit}
+              </Text>
+              <Text style={styles.priceRow}>
+                <Text style={styles.actualPrice}>
+                  ₹{option.actualPrice}
+                </Text>
+                <Text style={styles.salePrice}>
+                  {' '}₹{option.salePrice}
+                </Text>
+              </Text>
+              <Text style={styles.discountText}>
+                {option.discountPercent}% off
               </Text>
             </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Products List with Pull-to-Refresh */}
-      <ScrollView
-        style={styles.productsContainer}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            colors={['#4CAF50']}
-            tintColor="#4CAF50"
-          />
-        }
-        showsVerticalScrollIndicator={false}
+          </View>
+          
+          {/* Add spacing between options (except for last one) */}
+          {index < options.length - 1 && (
+            <View style={styles.optionSpacer} />
+          )}
+        </View>
+      ))}
+      
+      {/* Edit Button for this column */}
+      <TouchableOpacity 
+        style={styles.editButton}
+        onPress={() => {
+          const product = products.find(p => p.id === productId);
+          if (product) handleEditOptions(product, type);
+        }}
       >
-        {/* Products Header */}
-        <View style={styles.productsHeader}>
-          <Text style={styles.productsTitle}>
-            {selectedCategory === 'all' 
-              ? 'All Products' 
-              : categories.find(c => c.id === selectedCategory)?.name || 'Products'
-            }
-          </Text>
-          <Text style={styles.productsCount}>
-            {filteredProducts.length} products
-          </Text>
+        <Feather name="edit-2" size={14} color="#2196F3" />
+        <Text style={styles.editButtonText}>
+          Edit
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      {/* Header Section */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+       My Products
+        </Text>
+        <Text style={styles.headerSubtitle}>
+          Update prices and availability in bulk
+        </Text>
+      </View>
+
+      {/* Search and Filter Section */}
+      <View style={styles.filterContainer}>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
-        {/* Product Cards - DETAILED VERSION */}
-        {filteredProducts.map(product => (
-          <View key={product.id} style={styles.productCard}>
-            {/* Product Header Section */}
-            <View style={styles.productHeader}>
-              {/* Product Info (Left side) */}
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>
-                  {product.name}
-                </Text>
-                <View style={styles.productMeta}>
-                  <Text style={styles.productCategory}>
-                    {product.category}
-                  </Text>
-                  {/* Status Badge */}
-                  {product.status && (
-                    <View style={[
-                      styles.statusBadge, 
-                      { 
-                        backgroundColor: product.status === 'approved' 
-                          ? '#4CAF50' 
-                          : product.status === 'pending' 
-                          ? '#FF9800' 
-                          : '#f44336' 
-                      }
-                    ]}>
-                      <Text style={styles.statusText}>
-                        {product.status}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-              
-              {/* Price Info (Right side) */}
-              <View style={styles.priceContainer}>
-                <Text style={styles.price}>
-                  ₹{product.price}
-                </Text>
-                <Text style={styles.quantity}>
-                  {product.quantity}
-                </Text>
-              </View>
-            </View>
-
-            {/* Product Details Section */}
-            <View style={styles.productDetails}>
-              {/* Quantity Types */}
-              {product.quantityTypes && product.quantityTypes.length > 0 && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>
-                    Quantity Types:
-                  </Text>
-                  <View style={styles.quantityTypes}>
-                    {product.quantityTypes.map((type, index) => (
-                      <Text key={index} style={styles.quantityType}>
-                        {type}
-                      </Text>
-                    ))}
-                  </View>
-                </View>
-              )}
-              
-              {/* Same Day/Next Day Prices */}
-              {product.sameDayPrice && product.nextDayPrice && (
-                <View style={styles.detailRow}>
-                  <View style={styles.dayPrices}>
-                    {/* Same Day Price */}
-                    <View style={styles.dayPrice}>
-                      <Text style={styles.dayLabel}>
-                        Same Day:
-                      </Text>
-                      <Text style={styles.dayPriceValue}>
-                        ₹{product.sameDayPrice}
-                      </Text>
-                    </View>
-                    
-                    {/* Next Day Price */}
-                    <View style={styles.dayPrice}>
-                      <Text style={styles.dayLabel}>
-                        Next Day:
-                      </Text>
-                      <Text style={styles.dayPriceValue}>
-                        ₹{product.nextDayPrice}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-
-              {/* Stock Status */}
-              <View style={styles.stockStatus}>
-                <View style={[
-                  styles.stockIndicator, 
-                  { 
-                    backgroundColor: product.inStock ? '#4CAF50' : '#f44336' 
-                  }
+        {/* Category Filter */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.categoryContainer}
+        >
+          {categories.map(category => (
+            <TouchableOpacity
+              key={category.id}
+              style={[
+                styles.categoryButton, 
+                selectedCategory === category.id && styles.categoryButtonActive
+              ]}
+              onPress={() => setSelectedCategory(category.id)}
+            >
+              <Ionicons
+                name={category.icon}
+                size={16}
+                color={selectedCategory === category.id ? '#fff' : '#666'}
+              />
+              <Text style={[
+                styles.categoryText, 
+                selectedCategory === category.id && styles.categoryTextActive
+              ]}>
+                {category.name}
+              </Text>
+              <View style={styles.categoryCount}>
+                <Text style={[
+                  styles.countText, 
+                  selectedCategory === category.id && styles.countTextActive
                 ]}>
-                  <Text style={styles.stockText}>
-                    {product.inStock ? 'In Stock' : 'Out of Stock'}
-                  </Text>
-                </View>
+                  {category.count}
+                </Text>
               </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Table Header */}
+      <View style={styles.tableHeader}>
+        {/* Column 1: Product Name */}
+        <View style={[styles.column, styles.nameColumn]}>
+          <Text style={styles.columnHeader}>
+            Product Name
+          </Text>
+        </View>
+        
+        {/* Column 2: Same Day */}
+        <View style={[styles.column, styles.optionsColumnHeader]}>
+          <View style={styles.columnHeaderWithIcon}>
+            <Ionicons name="flash-outline" size={16} color="#fff" />
+            <Text style={styles.columnHeader}>
+              Same Day
+            </Text>
+          </View>
+        </View>
+        
+        {/* Column 3: Next Day */}
+        <View style={[styles.column, styles.optionsColumnHeader]}>
+          <View style={styles.columnHeaderWithIcon}>
+            <Ionicons name="calendar-outline" size={16} color="#fff" />
+            <Text style={styles.columnHeader}>
+              Next Day
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Products Table */}
+      <ScrollView style={styles.tableContainer}>
+        {filteredProducts.map(product => (
+          <View key={product.id} style={styles.tableRow}>
+            {/* Column 1: Product Name */}
+            <View style={[styles.column, styles.nameColumn]}>
+              <Text style={styles.productName}>
+                {product.name}
+              </Text>
+              <Text style={styles.productCategory}>
+                {product.category}
+              </Text>
             </View>
 
-            {/* Product Action Buttons */}
-            <View style={styles.productActions}>
-              {/* Edit Button */}
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.editButton]} 
-                onPress={() => handleEditProduct(product)}
-              >
-                <MaterialIcons name="edit" size={16} color="#2196F3" />
-                <Text style={[styles.actionText, { color: '#2196F3' }]}>
-                  Edit
-                </Text>
-              </TouchableOpacity>
-              
-              {/* Active Status Toggle */}
-              <View style={styles.toggleContainer}>
-                <Text style={styles.toggleLabel}>
-                  {product.isActive ? 'Active' : 'Inactive'}
-                </Text>
-                <Switch
-                  value={product.isActive}
-                  onValueChange={() => handleToggleActive(product.id)}
-                  trackColor={{ false: '#e0e0e0', true: '#4CAF50' }}
-                  thumbColor="#fff"
-                  ios_backgroundColor="#e0e0e0"
-                />
-              </View>
-            </View>
+            {/* Column 2: Same Day Options */}
+            {renderOptionsColumn(product.sameDayOptions, 'sameDay', product.id)}
+
+            {/* Column 3: Next Day Options */}
+            {renderOptionsColumn(product.nextDayOptions, 'nextDay', product.id)}
           </View>
         ))}
 
-        {/* Empty State (No products found) */}
+        {/* Empty State */}
         {filteredProducts.length === 0 && (
           <View style={styles.emptyState}>
             <MaterialIcons name="inventory" size={64} color="#ddd" />
@@ -491,10 +601,171 @@ const ProductList: React.FC = () => {
             </Text>
           </View>
         )}
-
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Edit Modal for Price Updates */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible && selectedProduct !== null}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Edit {editOptionsType === 'sameDay' ? 'Same Day' : 'Next Day'} Prices - {selectedProduct?.name}
+              </Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Content (Options List) */}
+            <ScrollView style={styles.modalScrollView}>
+              {selectedProduct?.[editOptionsType === 'sameDay' ? 'sameDayOptions' : 'nextDayOptions'].map((option, index) => (
+                <View key={index} style={styles.editOptionCard}>
+                  {/* Option Header */}
+                  <View style={styles.editOptionHeader}>
+                    <Text style={styles.editOptionTitle}>
+                      {option.quantity}{option.unit}
+                    </Text>
+                    <View style={styles.availabilityRow}>
+                      <Switch
+                        value={option.isEnabled}
+                        onValueChange={(value) => {
+                          if (selectedProduct) {
+                            const updatedProduct = { ...selectedProduct };
+                            const options = editOptionsType === 'sameDay' 
+                              ? updatedProduct.sameDayOptions 
+                              : updatedProduct.nextDayOptions;
+                            options[index].isEnabled = value;
+                            setSelectedProduct(updatedProduct);
+                          }
+                        }}
+                        trackColor={{ false: '#ddd', true: '#4CAF50' }}
+                        thumbColor="#fff"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Price Inputs */}
+                  <View style={styles.priceInputs}>
+                    {/* Actual Price Input */}
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>
+                        Actual Price (₹)
+                      </Text>
+                      <TextInput
+                        style={styles.input}
+                        value={option.actualPrice.toString()}
+                        onChangeText={(text) => {
+                          if (selectedProduct) {
+                            const updatedProduct = { ...selectedProduct };
+                            const options = editOptionsType === 'sameDay' 
+                              ? updatedProduct.sameDayOptions 
+                              : updatedProduct.nextDayOptions;
+                            options[index].actualPrice = parseFloat(text) || 0;
+                            
+                            // Recalculate discount percentage
+                            options[index].discountPercent = Math.round(
+                              ((options[index].actualPrice - options[index].salePrice) / 
+                               options[index].actualPrice) * 100
+                            );
+                            setSelectedProduct(updatedProduct);
+                          }
+                        }}
+                        keyboardType="numeric"
+                      />
+                    </View>
+
+                    {/* Sale Price Input */}
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>
+                        Sale Price (₹)
+                      </Text>
+                      <TextInput
+                        style={styles.input}
+                        value={option.salePrice.toString()}
+                        onChangeText={(text) => {
+                          if (selectedProduct) {
+                            const updatedProduct = { ...selectedProduct };
+                            const options = editOptionsType === 'sameDay' 
+                              ? updatedProduct.sameDayOptions 
+                              : updatedProduct.nextDayOptions;
+                            options[index].salePrice = parseFloat(text) || 0;
+                            
+                            // Recalculate discount percentage
+                            options[index].discountPercent = Math.round(
+                              ((options[index].actualPrice - options[index].salePrice) / 
+                               options[index].actualPrice) * 100
+                            );
+                            setSelectedProduct(updatedProduct);
+                          }
+                        }}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Discount Information */}
+                  <View style={styles.discountRow}>
+                    <Text style={styles.discountLabel}>
+                      Discount: {option.discountPercent}%
+                    </Text>
+                    <Text style={styles.savingsText}>
+                      Save: ₹{option.actualPrice - option.salePrice}
+                    </Text>
+                  </View>
+
+                  {/* Stock Toggle */}
+                  <View style={styles.stockToggle}>
+                    <Text style={styles.stockLabel}>
+                      Out of Stock:
+                    </Text>
+                    <Switch
+                      value={option.isOutOfStock}
+                      onValueChange={(value) => {
+                        if (selectedProduct) {
+                          const updatedProduct = { ...selectedProduct };
+                          const options = editOptionsType === 'sameDay' 
+                            ? updatedProduct.sameDayOptions 
+                            : updatedProduct.nextDayOptions;
+                          options[index].isOutOfStock = value;
+                          setSelectedProduct(updatedProduct);
+                        }
+                      }}
+                      trackColor={{ false: '#ddd', true: '#f44336' }}
+                      thumbColor="#fff"
+                    />
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            {/* Modal Action Buttons */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleSaveEdit}
+              >
+                <Text style={styles.saveButtonText}>
+                  Save Changes
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -505,94 +776,68 @@ const ProductList: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
   },
   header: {
+    padding: 16,
     backgroundColor: '#fff',
-    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerContent: {
-    flex: 1,
+    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
     color: '#666',
+    marginTop: 4,
   },
-  headerStats: {
-    marginLeft: 20,
-  },
-  statBox: {
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#fff',
-    opacity: 0.9,
+  filterContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
     marginHorizontal: 16,
-    marginVertical: 12,
+    marginBottom: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    height: 48,
   },
   searchIcon: {
     marginRight: 12,
   },
   searchInput: {
     flex: 1,
+    paddingVertical: 12,
     fontSize: 16,
     color: '#333',
-    paddingVertical: 0,
   },
   categoryContainer: {
-    paddingLeft: 16,
-  },
-  categoryContent: {
-    paddingRight: 16,
+    paddingHorizontal: 16,
   },
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
+    paddingVertical: 8,
+    borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: '#e0e0e0',
   },
   categoryButtonActive: {
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
   categoryText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#666',
     marginLeft: 6,
@@ -606,199 +851,147 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
-    minWidth: 24,
+    minWidth: 20,
     alignItems: 'center',
   },
-  categoryCountActive: {
-    backgroundColor: '#fff',
-  },
   countText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#666',
   },
   countTextActive: {
     color: '#4CAF50',
   },
-  productsContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  productsHeader: {
+  tableHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
-  productsTitle: {
-    fontSize: 18,
+  column: {
+    paddingHorizontal: 4,
+  },
+  columnHeader: {
+    color: '#fff',
     fontWeight: 'bold',
-    color: '#333',
+    fontSize: 12,
+    textAlign: 'center',
   },
-  productsCount: {
-    fontSize: 14,
-    color: '#666',
-  },
-  productCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  // Product Header Styles
-  productHeader: {
+  columnHeaderWithIcon: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
-  productInfo: {
+  nameColumn: {
+    flex: 1.2,
+  },
+  optionsColumnHeader: {
+    flex: 1.8,
+  },
+  tableContainer: {
     flex: 1,
+    paddingHorizontal: 8,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    marginTop: 8,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   productName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#333',
     marginBottom: 4,
-  },
-  productMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   productCategory: {
     fontSize: 12,
     color: '#666',
     textTransform: 'capitalize',
   },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+  optionsColumn: {
+    flex: 1.8,
+    alignItems: 'center',
   },
-  statusText: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: '600',
-    textTransform: 'uppercase',
+  optionBox: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 6,
+    padding: 8,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
-  priceContainer: {
-    alignItems: 'flex-end',
+  outOfStockBox: {
+    backgroundColor: '#fff5f5',
+    borderColor: '#f44336',
   },
-  price: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4CAF50',
+  disabledBox: {
+    opacity: 0.5,
   },
-  quantity: {
-    fontSize: 12,
-    color: '#666',
+  optionSpacer: {
+    height: 8,
+    width: '100%',
   },
-  // Product Details Styles
-  productDetails: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-    marginBottom: 12,
-  },
-  detailRow: {
+  optionHeader: {
+    alignItems: 'center',
     marginBottom: 8,
   },
-  detailLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  quantityTypes: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  quantityType: {
-    fontSize: 12,
-    backgroundColor: '#e8f5e9',
-    color: '#2e7d32',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  dayPrices: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  dayPrice: {
-    flexDirection: 'row',
+  optionDetails: {
     alignItems: 'center',
-    gap: 4,
   },
-  dayLabel: {
+  quantityText: {
     fontSize: 12,
-    color: '#666',
-  },
-  dayPriceValue: {
-    fontSize: 14,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 4,
   },
-  stockStatus: {
-    marginTop: 8,
+  priceRow: {
+    fontSize: 11,
+    marginBottom: 2,
   },
-  stockIndicator: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+  actualPrice: {
+    textDecorationLine: 'line-through',
+    color: '#999',
   },
-  stockText: {
+  salePrice: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  discountText: {
     fontSize: 10,
-    color: '#fff',
+    color: '#f44336',
     fontWeight: '600',
-  },
-  // Product Actions Styles
-  productActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#f5f5f5',
-    gap: 4,
   },
   editButton: {
-    backgroundColor: '#e3f2fd',
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  toggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 6,
+    alignSelf: 'center',
   },
-  toggleLabel: {
+  editButtonText: {
     fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    color: '#2196F3',
+    fontWeight: '600',
   },
-  // Empty State Styles
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    padding: 40,
+    marginTop: 20,
   },
   emptyStateText: {
     fontSize: 18,
@@ -811,9 +1004,143 @@ const styles = StyleSheet.create({
     color: '#ccc',
     marginTop: 4,
   },
-  bottomSpacing: {
-    height: 20,
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+    marginRight: 16,
+  },
+  modalScrollView: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  editOptionCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  editOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  editOptionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  availabilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  priceInputs: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  inputGroup: {
+    flex: 1,
+  },
+  inputLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#333',
+  },
+  discountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  discountLabel: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+  },
+  savingsText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  stockToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  stockLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
+// Export the main component
 export default ProductList;

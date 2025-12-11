@@ -37,13 +37,22 @@ export interface FilterParams {
   deliveryType: Array<'SAMEDAY' | 'NEXTDAY' | 'SCHEDULED'>;
 }
 
+// Props interface
+interface OrdersScreenProps {
+  initialTab?: 'all' | 'today' | 'pending';
+  presetFilters?: Partial<FilterParams>; // Add this prop
+}
+
 // Icon components
 const FilterIcon = () => <Text style={styles.iconText}>⚡</Text>;
 const CalendarIcon = () => <Text style={styles.iconText}>📅</Text>;
 const XIcon = () => <Text style={styles.iconText}>✕</Text>;
 const ChevronLeftIcon = () => <Text style={styles.iconText}>←</Text>;
 
-const OrdersScreen: React.FC<{ initialTab?: 'all' | 'today' | 'pending' }> = ({ initialTab = 'all' }) => {
+const OrdersScreen: React.FC<OrdersScreenProps> = ({ 
+  initialTab = 'all',
+  presetFilters = {} // Default to empty object
+}) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'all' | 'today' | 'pending'>(initialTab);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -51,14 +60,15 @@ const OrdersScreen: React.FC<{ initialTab?: 'all' | 'today' | 'pending' }> = ({ 
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Filter states
-  const [filters, setFilters] = useState<FilterParams>({
+  // Filter states - Initialize with preset filters
+  const [filters, setFilters] = useState<FilterParams>(() => ({
     shopId: 'SHOP001',
     fromOrderDate: '',
     toOrderDate: '',
     orderStatus: ['PENDING', 'PROCESSING', 'DELIVERED', 'CANCELLED'],
     deliveryType: ['SAMEDAY', 'NEXTDAY', 'SCHEDULED'],
-  });
+    ...presetFilters, // Override with preset filters
+  }));
 
   const statusOptions: Array<'PENDING' | 'PROCESSING' | 'DELIVERED' | 'CANCELLED'> = [
     'PENDING', 'PROCESSING', 'DELIVERED', 'CANCELLED'
@@ -81,6 +91,7 @@ const OrdersScreen: React.FC<{ initialTab?: 'all' | 'today' | 'pending' }> = ({ 
       
       const today = new Date().toISOString().split('T')[0];
       
+      // First, get all orders based on tab
       switch (activeTab) {
         case 'today':
           mockOrders = [
@@ -141,6 +152,19 @@ const OrdersScreen: React.FC<{ initialTab?: 'all' | 'today' | 'pending' }> = ({ 
               customerName: 'Alice Pending',
               totalAmount: '$120.75'
             },
+            {
+              orderId: 'ORD789016',
+              shopId: 'SHOP789',
+              address: '505 Another Street, City, State, 12345',
+              createdAt: '2025-01-13',
+              deliveryDate: '2025-01-14',
+              deliveryType: 'SCHEDULED',
+              deliverySlot: '01:00 PM - 03:00 PM',
+              status: 'PENDING',
+              phone: '+1234567894',
+              customerName: 'Charlie Pending',
+              totalAmount: '$65.25'
+            },
           ];
           break;
           
@@ -188,7 +212,22 @@ const OrdersScreen: React.FC<{ initialTab?: 'all' | 'today' | 'pending' }> = ({ 
           ];
       }
       
-      setOrders(mockOrders);
+      // Apply filters to the mock data
+      const filteredOrders = mockOrders.filter(order => {
+        // Filter by order status
+        if (filters.orderStatus.length > 0 && !filters.orderStatus.includes(order.status)) {
+          return false;
+        }
+        
+        // Filter by delivery type
+        if (filters.deliveryType.length > 0 && !filters.deliveryType.includes(order.deliveryType)) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      setOrders(filteredOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -349,7 +388,11 @@ const OrdersScreen: React.FC<{ initialTab?: 'all' | 'today' | 'pending' }> = ({ 
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No orders found</Text>
-              <Text style={styles.emptySubText}>Try adjusting your filters</Text>
+              <Text style={styles.emptySubText}>
+                {filters.orderStatus.length === 1 && filters.orderStatus[0] === 'PENDING' 
+                  ? "No pending orders with current filters" 
+                  : "Try adjusting your filters"}
+              </Text>
             </View>
           }
         />

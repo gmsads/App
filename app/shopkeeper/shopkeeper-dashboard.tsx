@@ -83,18 +83,18 @@ const ShopkeeperDashboard: React.FC = () => {
       screen: '/shopkeeper/products/product-list',
     },
     {
-      title: 'This Week',
-      count: ordersCount.thisWeek,
-      icon: 'date-range' as const,
-      color: '#2196F3',
-      screen: '/shopkeeper/orders/orders-list?filter=week',
-    },
-    {
       title: 'Orders',
       count: 15,
       icon: 'list-alt' as const,
       color: '#9C27B0',
       screen: '/shopkeeper/orders/orders-list', // Goes to main orders page with tabs
+    },
+    {
+      title: 'Delivery Settings',
+      count: 'Setup',
+      icon: 'delivery-dining' as const,
+      color: '#2196F3',
+      screen: '/shopkeeper/settings/delivery-settings',
     },
     {
       title: 'Reports',
@@ -117,18 +117,6 @@ const ShopkeeperDashboard: React.FC = () => {
       icon: 'edit' as const,
       color: '#FF9800',
       screen: '/shopkeeper/my-list/my-list',
-    },
-    {
-      title: 'Delivery Settings',
-      icon: 'delivery-dining' as const,
-      color: '#2196F3',
-      screen: '/shopkeeper/settings/delivery-settings',
-    },
-    {
-      title: 'Profile',
-      icon: 'person' as const,
-      color: '#9C27B0',
-      screen: '/shopkeeper/profile/profile-info',
     },
     {
       title: 'Pending Orders',
@@ -260,7 +248,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#4CAF50',
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -321,7 +309,7 @@ const styles = StyleSheet.create({
   },
   quickAction: {
     alignItems: 'center',
-    width: '31%',
+    width: '48%', // Changed from '31%' to '48%' for 2 columns (2x2 grid)
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
