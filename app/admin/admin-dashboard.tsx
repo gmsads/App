@@ -28,8 +28,6 @@ const AdminDashboard: React.FC = () => {
     totalProducts: 0,
     totalSales: 0,
     activeUsers: 0,
-    totalDailySales: 0,
-    totalMonthlySales: 0
   });
 
   // useEffect hook to run on component mount
@@ -58,39 +56,16 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Function to load dashboard data (fetching from API)
+  // Function to load dashboard data (currently using mock data)
   const loadDashboardData = async (): Promise<void> => {
-    try {
-      // In a real app, you would make an API call here
-      // For now, we'll use the provided data directly
-      const dashboardData = {
-        shopCount: 2,
-        productCount: 1,
-        userCount: 0,
-        totalDailySales: 823,
-        totalMonthlySales: 823
-      };
-
-      setStats({
-        totalShops: dashboardData.shopCount,
-        totalProducts: dashboardData.productCount,
-        totalSales: dashboardData.totalMonthlySales, // Using monthly sales as total sales
-        activeUsers: dashboardData.userCount,
-        totalDailySales: dashboardData.totalDailySales,
-        totalMonthlySales: dashboardData.totalMonthlySales
-      });
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      // Fallback to mock data if API fails
-      setStats({
-        totalShops: 2,
-        totalProducts: 1,
-        totalSales: 823,
-        activeUsers: 0,
-        totalDailySales: 823,
-        totalMonthlySales: 823
-      });
-    }
+    // Simulate loading data from an API
+    // In a real app, this would make an API call to fetch actual data
+    setStats({
+      totalShops: 45,
+      totalProducts: 128,
+      totalSales: 12450,
+      activeUsers: 234,
+    });
   };
 
   // Function to handle pull-to-refresh action
@@ -215,21 +190,6 @@ const AdminDashboard: React.FC = () => {
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{stats.activeUsers}</Text>
             <Text style={styles.statLabel}>Active Users</Text>
-          </View>
-        </View>
-
-        {/* Additional Sales Stats Section */}
-        <View style={styles.salesStatsContainer}>
-          <Text style={styles.sectionTitle}>Sales Overview</Text>
-          <View style={styles.salesStatsRow}>
-            <View style={styles.salesStatCard}>
-              <Text style={styles.salesStatNumber}>₹{stats.totalDailySales.toLocaleString()}</Text>
-              <Text style={styles.salesStatLabel}>Today's Sales</Text>
-            </View>
-            <View style={styles.salesStatCard}>
-              <Text style={styles.salesStatNumber}>₹{stats.totalMonthlySales.toLocaleString()}</Text>
-              <Text style={styles.salesStatLabel}>Monthly Sales</Text>
-            </View>
           </View>
         </View>
 
@@ -388,55 +348,6 @@ const styles = StyleSheet.create({
     fontSize: 12, // Small font size
     color: '#7f8c8d', // Gray color
     textAlign: 'center', // Center align text
-  },
-  
-  // Sales stats container
-  salesStatsContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  
-  // Sales stats row
-  salesStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  
-  // Sales stat card
-  salesStatCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    flex: 1,
-    alignItems: 'center',
-    
-    // Shadow for iOS
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    
-    // Elevation for Android
-    elevation: 3,
-  },
-  
-  // Sales stat number
-  salesStatNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2ecc71', // Green color for sales
-    marginBottom: 4,
-  },
-  
-  // Sales stat label
-  salesStatLabel: {
-    fontSize: 12,
-    color: '#7f8c8d',
-    textAlign: 'center',
   },
   
   // Menu container style

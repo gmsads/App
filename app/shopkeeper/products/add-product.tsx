@@ -1,3 +1,5 @@
+
+// app/shopkeeper/products/add-product.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -11,7 +13,6 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
-  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
@@ -44,14 +45,16 @@ interface ProductForm {
   shopId: string;
   productId: string;
   name: string;
-  imageUrl: string;
-  publicId: string;
   sameDayAvailable: 'Available' | 'Out of Stock' | 'Disabled';
   nextDayAvailable: 'Available' | 'Out of Stock' | 'Disabled';
   sameDayOptions: QuantityOption[];
   nextDayOptions: QuantityOption[];
 }
 
+<<<<<<< HEAD
+=======
+// Predefined units and quantities
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
 const ALL_UNITS = [
   { value: 'kg', label: 'Kg' },
   { value: 'g', label: 'Gms' },
@@ -73,6 +76,23 @@ const ALL_UNITS = [
   { value: 'packets', label: 'packets' },
 ];
 
+const ALL_QUANTITIES = [
+  { value: '1', label: '1' },
+  { value: '50', label: '50' },
+  { value: '100', label: '100' },
+  { value: '200', label: '200' },
+  { value: '250', label: '250' },
+  { value: '500', label: '500' },
+  { value: '750', label: '750' },
+  { value: '1000', label: '1000' },
+  { value: '1500', label: '1500' },
+  { value: '2000', label: '2000' },
+  { value: '2500', label: '2500' },
+  { value: '5000', label: '5000' },
+  { value: '10000', label: '10000' },
+];
+
+// Get appropriate quantities based on product type
 const getQuantitiesForProduct = (product: Product) => {
   if (product.category === 'Fruits' || product.category === 'Vegetables') {
     return [
@@ -113,21 +133,24 @@ const getQuantitiesForProduct = (product: Product) => {
     ];
   }
   
-  return [
-    { value: '250', label: '250g' },
-    { value: '500', label: '500g' },
-    { value: '1000', label: '1kg' },
-    { value: '2000', label: '2kg' },
-  ];
+  // Default quantities
+  return ALL_QUANTITIES.map(q => ({
+    value: q.value,
+    label: q.label
+  }));
 };
 
+// Get appropriate units based on product type
 const getUnitsForProduct = (product: Product) => {
   if (product.category === 'Fruits' || product.category === 'Vegetables') {
     return [
       { value: 'g', label: 'Gms' },
       { value: 'kg', label: 'Kg' },
+      { value: 'kgs', label: 'Kgs' },
       { value: 'bunch', label: 'bunch' },
+      { value: 'bunches', label: 'bunches' },
       { value: 'piece', label: 'piece' },
+      { value: 'pieces', label: 'pieces' },
     ];
   } else if (product.category === 'Dairy') {
     if (product.name.toLowerCase().includes('milk')) {
@@ -139,6 +162,7 @@ const getUnitsForProduct = (product: Product) => {
     } else if (product.name.toLowerCase().includes('egg')) {
       return [
         { value: 'piece', label: 'piece' },
+        { value: 'pieces', label: 'pieces' },
         { value: 'dozen', label: 'dozen' },
       ];
     }
@@ -146,23 +170,23 @@ const getUnitsForProduct = (product: Product) => {
     return [
       { value: 'g', label: 'Gms' },
       { value: 'kg', label: 'Kg' },
+      { value: 'kgs', label: 'Kgs' },
       { value: 'packet', label: 'packet' },
     ];
   } else if (product.category === 'Bakery') {
     return [
       { value: 'pack', label: 'pack' },
+      { value: 'packs', label: 'packs' },
       { value: 'piece', label: 'piece' },
+      { value: 'pieces', label: 'pieces' },
     ];
   }
   
-  return [
-    { value: 'g', label: 'Gms' },
-    { value: 'kg', label: 'Kg' },
-    { value: 'pack', label: 'pack' },
-    { value: 'piece', label: 'piece' },
-  ];
+  // Default units
+  return ALL_UNITS;
 };
 
+// Mock product data
 const MOCK_PRODUCTS: Product[] = [
   { 
     id: 'P001', 
@@ -268,13 +292,13 @@ const AddProduct: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
-  const { imageUrl, publicId } = useLocalSearchParams();
-  
+  // State for product search modal
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(MOCK_PRODUCTS);
 
+  // State for quantity and unit selection modals
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [showUnitModal, setShowUnitModal] = useState(false);
   const [currentEditing, setCurrentEditing] = useState<{
@@ -283,14 +307,16 @@ const AddProduct: React.FC = () => {
     field: 'quantity' | 'unit';
   } | null>(null);
 
-  const shopId = 'S987';
+  // State for custom quantity input
+  const [customQuantity, setCustomQuantity] = useState('');
+
+  // Get shopId from your auth/store
+  const shopId = 'S987'; // Replace with actual shop ID from your auth system
 
   const [formData, setFormData] = useState<ProductForm>({
     shopId: shopId,
     productId: '',
     name: '',
-    imageUrl: '',
-    publicId: '',
     sameDayAvailable: 'Available',
     nextDayAvailable: 'Available',
     sameDayOptions: [
@@ -315,6 +341,7 @@ const AddProduct: React.FC = () => {
     ],
   });
 
+  // Initialize from params if available
   useEffect(() => {
     if (params.productId && params.productName) {
       const product = MOCK_PRODUCTS.find(p => p.id === params.productId);
@@ -324,6 +351,7 @@ const AddProduct: React.FC = () => {
     }
   }, [params]);
 
+<<<<<<< HEAD
   useEffect(() => {
     if (imageUrl) {
       setFormData(prev => ({
@@ -333,6 +361,7 @@ const AddProduct: React.FC = () => {
       }));
     }
   }, [imageUrl, publicId]);
+
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -352,6 +381,7 @@ const AddProduct: React.FC = () => {
     { value: 'Disabled', label: 'Disabled', color: '#F44336' },
   ];
 
+<<<<<<< HEAD
   const handleUploadImage = () => {
     if (!selectedProduct) {
       Alert.alert('Select Product', 'Please select a product first before uploading an image.');
@@ -382,22 +412,16 @@ const AddProduct: React.FC = () => {
       ...prev,
       productId: product.id,
       name: product.name,
-      sameDayOptions: [{
+      sameDayOptions: prev.sameDayOptions.map(opt => ({
+        ...opt,
         quantity: quantities[0]?.value || '',
         unit: product.baseUnit,
-        salePrice: '',
-        actualPrice: '',
-        discountPercentage: 0,
-        available: true,
-      }],
-      nextDayOptions: [{
+      })),
+      nextDayOptions: prev.nextDayOptions.map(opt => ({
+        ...opt,
         quantity: quantities[0]?.value || '',
         unit: product.baseUnit,
-        salePrice: '',
-        actualPrice: '',
-        discountPercentage: 0,
-        available: true,
-      }],
+      })),
     }));
     setShowProductSearch(false);
     setSearchQuery('');
@@ -484,6 +508,7 @@ const AddProduct: React.FC = () => {
     }
   };
 
+
   const handleUnitSelect = (unit: string) => {
     if (currentEditing) {
       handleQuantityOptionChange(
@@ -509,6 +534,8 @@ const AddProduct: React.FC = () => {
         [field]: value,
       };
 
+      // Calculate discount if salePrice or actualPrice changes
+
       if (field === 'salePrice' || field === 'actualPrice') {
         const salePrice = field === 'salePrice' ? value : updatedOptions[index].salePrice;
         const actualPrice = field === 'actualPrice' ? value : updatedOptions[index].actualPrice;
@@ -529,6 +556,7 @@ const AddProduct: React.FC = () => {
         [field]: value,
       };
 
+      // Calculate discount if salePrice or actualPrice changes
       if (field === 'salePrice' || field === 'actualPrice') {
         const salePrice = field === 'salePrice' ? value : updatedOptions[index].salePrice;
         const actualPrice = field === 'actualPrice' ? value : updatedOptions[index].actualPrice;
@@ -548,14 +576,30 @@ const AddProduct: React.FC = () => {
   const getQuantityLabel = (quantityValue: string) => {
     if (!selectedProduct || !quantityValue) return 'Select quantity';
     
+    // Check if it's a predefined quantity
     const quantity = selectedProduct.availableQuantities.find(q => q.value === quantityValue);
     if (quantity) return quantity.label;
     
-    const option = formData.sameDayOptions.find(opt => opt.quantity === quantityValue) || 
-                   formData.nextDayOptions.find(opt => opt.quantity === quantityValue);
+    // Check if it's in ALL_QUANTITIES
+    const allQuantity = ALL_QUANTITIES.find(q => q.value === quantityValue);
+    if (allQuantity) return allQuantity.label;
     
-    if (option && option.unit) {
-      return `${quantityValue}${option.unit === 'g' || option.unit === 'ml' ? option.unit : ` ${option.unit}`}`;
+    // Custom quantity
+    const unit = formData.sameDayOptions.find(opt => opt.quantity === quantityValue)?.unit || 
+                 formData.nextDayOptions.find(opt => opt.quantity === quantityValue)?.unit;
+    
+    if (unit) {
+      // Convert to appropriate label based on unit
+      const numValue = parseInt(quantityValue);
+      if (unit === 'g' || unit === 'ml') {
+        return `${quantityValue}${unit}`;
+      } else if (unit === 'kg' || unit === 'kgs' || unit === 'litre') {
+        if (numValue >= 1000) {
+          return `${numValue / 1000} ${unit}`;
+        }
+        return `${quantityValue}g`;
+      }
+
     }
     
     return quantityValue;
@@ -574,12 +618,6 @@ const AddProduct: React.FC = () => {
       return false;
     }
 
-    for (const option of formData.sameDayOptions) {
-      if (!option.quantity || !option.unit || !option.salePrice || !option.actualPrice) {
-        Alert.alert('Validation Error', 'Please fill all required fields in Same Day options.');
-        return false;
-      }
-    }
 
     for (const option of formData.nextDayOptions) {
       if (!option.quantity || !option.unit || !option.salePrice || !option.actualPrice) {
@@ -598,12 +636,14 @@ const AddProduct: React.FC = () => {
 
     setSaving(true);
     try {
+      // Prepare data according to your JSON structure
       const submitData = {
         productId: formData.productId,
         name: formData.name,
         shopId: formData.shopId,
         imageUrl: formData.imageUrl,
         publicId: formData.publicId,
+
         sameDayAvailable: formData.sameDayAvailable,
         nextDayAvailable: formData.nextDayAvailable,
         quantityOptions: {
@@ -627,6 +667,7 @@ const AddProduct: React.FC = () => {
       };
 
       console.log('Submitting:', submitData);
+
 
       await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -711,6 +752,8 @@ const AddProduct: React.FC = () => {
         <Text style={styles.headerTitle}>Add Product Details</Text>
       </View>
 
+      {/* Product Selection */}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Select Product</Text>
         
@@ -730,6 +773,7 @@ const AddProduct: React.FC = () => {
           <Feather name="chevron-down" size={20} color="#666" />
         </TouchableOpacity>
 
+        {/* Hidden Product ID and Shop ID */}
         <View style={styles.hiddenInfo}>
           <Text style={styles.hiddenLabel}>Product ID: {formData.productId || 'Not selected'}</Text>
           <Text style={styles.hiddenLabel}>Shop ID: {formData.shopId}</Text>
@@ -752,6 +796,7 @@ const AddProduct: React.FC = () => {
           </View>
         )}
       </View>
+
 
       {selectedProduct && (
         <View style={styles.section}>
@@ -789,6 +834,7 @@ const AddProduct: React.FC = () => {
         </View>
       )}
 
+      {/* Product Search Modal */}
       <Modal
         visible={showProductSearch}
         animationType="slide"
@@ -803,6 +849,8 @@ const AddProduct: React.FC = () => {
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
+
+            {/* Search Bar */}
 
             <View style={styles.searchContainer}>
               <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
@@ -820,6 +868,7 @@ const AddProduct: React.FC = () => {
               ) : null}
             </View>
 
+            {/* Product List */}
             <FlatList
               data={filteredProducts}
               renderItem={renderProductItem}
@@ -837,6 +886,9 @@ const AddProduct: React.FC = () => {
         </View>
       </Modal>
 
+
+      {/* Quantity Selection Modal */}
+
       <Modal
         visible={showQuantityModal}
         animationType="slide"
@@ -852,8 +904,35 @@ const AddProduct: React.FC = () => {
               </TouchableOpacity>
             </View>
 
+            {/* Custom Quantity Input */}
+            <View style={styles.customQuantitySection}>
+              <Text style={styles.customQuantityLabel}>Custom Quantity:</Text>
+              <View style={styles.customQuantityInputContainer}>
+                <TextInput
+                  style={styles.customQuantityInput}
+                  placeholder="Enter custom quantity"
+                  value={customQuantity}
+                  onChangeText={setCustomQuantity}
+                  keyboardType="numeric"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.customQuantityButton,
+                    !customQuantity.trim() && styles.customQuantityButtonDisabled
+                  ]}
+                  onPress={handleCustomQuantitySubmit}
+                  disabled={!customQuantity.trim()}
+                >
+                  <Text style={styles.customQuantityButtonText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Common Quantities */}
+            <Text style={styles.subSectionTitle}>Common Quantities</Text>
             <FlatList
-              data={selectedProduct?.availableQuantities || []}
+              data={selectedProduct?.availableQuantities || ALL_QUANTITIES}
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
               renderItem={renderQuantityItem}
               keyExtractor={(item) => item.value}
               showsVerticalScrollIndicator={false}
@@ -867,6 +946,8 @@ const AddProduct: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Unit Selection Modal */}
 
       <Modal
         visible={showUnitModal}
@@ -884,7 +965,9 @@ const AddProduct: React.FC = () => {
             </View>
 
             <FlatList
+
               data={selectedProduct?.availableUnits || []}
+              data={selectedProduct?.availableUnits || ALL_UNITS
               renderItem={renderUnitItem}
               keyExtractor={(item) => item.value}
               showsVerticalScrollIndicator={false}
@@ -899,6 +982,7 @@ const AddProduct: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Availability Options */}
       {selectedProduct && (
         <>
           <View style={styles.section}>
@@ -971,6 +1055,7 @@ const AddProduct: React.FC = () => {
             </View>
           </View>
 
+          {/* Same Day Quantity Options */}
           {formData.sameDayAvailable !== 'Disabled' && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Same Day Quantity Options</Text>
@@ -1082,6 +1167,7 @@ const AddProduct: React.FC = () => {
             </View>
           )}
 
+          {/* Next Day Quantity Options */}
           {formData.nextDayAvailable !== 'Disabled' && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Next Day Quantity Options</Text>
@@ -1193,6 +1279,8 @@ const AddProduct: React.FC = () => {
             </View>
           )}
 
+          {/* Submit Button */}
+
           <TouchableOpacity
             style={[styles.submitButton, saving && styles.submitButtonDisabled]}
             onPress={handleSubmit}
@@ -1208,11 +1296,12 @@ const AddProduct: React.FC = () => {
             )}
           </TouchableOpacity>
 
+          {/* Help Text */}
           <View style={styles.helpSection}>
             <Ionicons name="information-circle" size={20} color="#666" />
             <Text style={styles.helpText}>
-              • Quantities and units are pre-populated based on product type{'\n'}
-              • Upload a product image for better visibility{'\n'}
+              • Select from predefined quantities or enter custom quantity{'\n'}
+
               • Choose appropriate unit for the product{'\n'}
               • Add multiple quantity options with different pricing{'\n'}
               • Discount percentage is automatically calculated
@@ -1388,6 +1477,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
+
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1601,6 +1691,48 @@ const styles = StyleSheet.create({
   optionItemText: {
     fontSize: 16,
     color: '#333',
+  },
+
+  customQuantitySection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  customQuantityLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  customQuantityInputContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  customQuantityInput: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  customQuantityButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  customQuantityButtonDisabled: {
+    backgroundColor: '#81c784',
+    opacity: 0.6,
+  },
+  customQuantityButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   discountRow: {
     flexDirection: 'row',

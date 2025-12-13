@@ -39,6 +39,7 @@ interface Product {
 }
 
 type Category = 'all' | 'vegetables' | 'fruits' | 'herbs' | 'cuts' | 'exotic' | 'flowers' | 'organic';
+<<<<<<< HEAD
 type DeliveryType = 'SAME_DAY' | 'NEXT_DAY';
 
 interface ShopInfo {
@@ -63,6 +64,8 @@ interface TopSeller {
   discount?: number;
   originalPrice?: number;
 }
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -156,6 +159,7 @@ const ProductItem = ({
       >
         <View style={styles.productImageContainer}>
           <Image source={{ uri: item.image }} style={styles.productImage} />
+<<<<<<< HEAD
           {/* Offer Cross Badge on top of image */}
           {currentUnit.originalPrice && (
             <View style={styles.offerCrossBadge}>
@@ -165,6 +169,8 @@ const ProductItem = ({
               </Text>
             </View>
           )}
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
           {currentUnit.discount && (
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>{currentUnit.discount}% OFF</Text>
@@ -193,6 +199,11 @@ const ProductItem = ({
                   <Text style={styles.productPrice}>₹{currentUnit.price}</Text>
                   <Text style={styles.productOriginalPrice}>₹{currentUnit.originalPrice}</Text>
                 </View>
+                <View style={styles.offBadge}>
+                  <Text style={styles.offText}>
+                    ₹{(currentUnit.originalPrice - currentUnit.price)} OFF
+                  </Text>
+                </View>
               </>
             ) : (
               <Text style={styles.productPrice}>₹{currentUnit.price}</Text>
@@ -210,7 +221,6 @@ const ProductItem = ({
         </View>
       </TouchableOpacity>
 
-      {/* Updated Unit Modal similar to image */}
       <Modal
         visible={showUnitModal}
         transparent={true}
@@ -220,22 +230,7 @@ const ProductItem = ({
         <View style={styles.modalOverlay}>
           <View style={styles.unitModalContent}>
             <View style={styles.unitModalHeader}>
-              <View style={styles.modalProductInfo}>
-                <Image source={{ uri: item.image }} style={styles.modalProductImage} />
-                <View style={styles.modalProductDetails}>
-                  <Text style={styles.modalProductName}>{item.name}</Text>
-                  <View style={styles.modalProductPrice}>
-                    {currentUnit.originalPrice ? (
-                      <>
-                        <Text style={styles.modalCurrentPrice}>₹{currentUnit.price}</Text>
-                        <Text style={styles.modalOriginalPrice}>₹{currentUnit.originalPrice}</Text>
-                      </>
-                    ) : (
-                      <Text style={styles.modalCurrentPrice}>₹{currentUnit.price}</Text>
-                    )}
-                  </View>
-                </View>
-              </View>
+              <Text style={styles.unitModalTitle}>Select Unit</Text>
               <TouchableOpacity 
                 style={styles.unitModalCloseBtn}
                 onPress={() => setShowUnitModal(false)}
@@ -244,9 +239,7 @@ const ProductItem = ({
               </TouchableOpacity>
             </View>
             
-            <View style={styles.modalDivider} />
-            
-            <Text style={styles.modalSectionTitle}>SELECT UNIT</Text>
+            <Text style={styles.productNameInModal}>{item.name}</Text>
             
             <View style={styles.unitOptionsContainer}>
               {item.availableUnits?.map((unit) => (
@@ -259,12 +252,30 @@ const ProductItem = ({
                   onPress={() => handleUnitSelect(unit)}
                 >
                   <View style={styles.unitLeftSection}>
+<<<<<<< HEAD
                     <Text style={[
                       styles.unitText,
                       selectedUnitId === unit.id && styles.selectedUnitText
                     ]}>
                       {unit.unit}
                     </Text>
+=======
+                    <View style={styles.unitTextContainer}>
+                      <Text style={[
+                        styles.unitText,
+                        selectedUnitId === unit.id && styles.selectedUnitText
+                      ]}>
+                        {unit.unit}
+                      </Text>
+                      {unit.discount && unit.discount > 0 && (
+                        <View style={styles.unitDiscountBadge}>
+                          <Text style={styles.unitDiscountText}>
+                            {unit.discount}% OFF
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
                   </View>
                   
                   <View style={styles.unitRightSection}>
@@ -281,6 +292,7 @@ const ProductItem = ({
                         </Text>
                       )}
                     </View>
+<<<<<<< HEAD
                     {unit.discount && unit.discount > 0 && (
                       <View style={styles.unitDiscountBadge}>
                         <Text style={styles.unitDiscountText}>
@@ -288,11 +300,17 @@ const ProductItem = ({
                         </Text>
                       </View>
                     )}
+=======
+                    <Text style={styles.unitSelectButton}>
+                      {selectedUnitId === unit.id ? 'SELECTED' : 'SELECT'}
+                    </Text>
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
             
+<<<<<<< HEAD
             <View style={styles.modalFooter}>
               <View style={styles.totalContainer}>
                 <Text style={styles.totalLabel}>Total</Text>
@@ -308,6 +326,14 @@ const ProductItem = ({
                 <Text style={styles.confirmButtonText}>CONFIRM</Text>
               </TouchableOpacity>
             </View>
+=======
+            <TouchableOpacity 
+              style={styles.closeModalButton}
+              onPress={() => setShowUnitModal(false)}
+            >
+              <Text style={styles.closeModalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
           </View>
         </View>
       </Modal>
@@ -324,11 +350,16 @@ const ProductList: React.FC = () => {
   const [reorderModalVisible, setReorderModalVisible] = useState(false);
   const [showCategorySidebar, setShowCategorySidebar] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(getCartItemCount());
+<<<<<<< HEAD
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('NEXT_DAY');
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const flatListRef = useRef<FlatList>(null);
   const bannerScrollRef = useRef<ScrollView>(null);
+=======
+  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
 
   const updateCartCount = () => {
     setCartItemCount(getCartItemCount());
@@ -338,6 +369,7 @@ const ProductList: React.FC = () => {
     updateCartCount();
   }, []);
 
+<<<<<<< HEAD
   const [shopInfo] = useState<ShopInfo>({
     name: 'Location - 1',
     vendor: 'your Local vendor\nvenkat packy',
@@ -442,6 +474,8 @@ const ProductList: React.FC = () => {
 
   const currentTopSellers = deliveryType === 'SAME_DAY' ? topSellersSameDay : topSellersNextDay;
 
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   const mainCategories = [
     { id: '1', name: 'View all', value: 'all' },
     { id: '2', name: 'Fresh vegetables', value: 'vegetables' },
@@ -1022,6 +1056,7 @@ const ProductList: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentOfferIndex, offers.length]);
 
+<<<<<<< HEAD
   useEffect(() => {
     const bannerInterval = setInterval(() => {
       const nextIndex = currentBannerIndex === banners.length - 1 ? 0 : currentBannerIndex + 1;
@@ -1036,6 +1071,8 @@ const ProductList: React.FC = () => {
     return () => clearInterval(bannerInterval);
   }, [currentBannerIndex, banners.length]);
 
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   const handleCategorySelect = (category: Category) => {
     setSelectedCategory(category);
     setShowCategorySidebar(true);
@@ -1078,12 +1115,15 @@ const ProductList: React.FC = () => {
     setCurrentOfferIndex(index);
   };
 
+<<<<<<< HEAD
   const handleBannerScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / (screenWidth - 32));
     setCurrentBannerIndex(index);
   };
 
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   const handleProfilePress = () => {
     router.push('/profile');
   };
@@ -1152,6 +1192,7 @@ const ProductList: React.FC = () => {
     />
   );
 
+<<<<<<< HEAD
   const renderTopSellerItem = ({ item }: { item: TopSeller }) => (
     <TouchableOpacity style={styles.topSellerCard}>
       <View style={styles.topSellerImageContainer}>
@@ -1333,6 +1374,8 @@ const ProductList: React.FC = () => {
     </View>
   );
 
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.titleContainer}>
@@ -1751,6 +1794,7 @@ const ProductList: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           numColumns={2}
+<<<<<<< HEAD
           ListHeaderComponent={() => (
             <View>
               {renderNewUIStructure()}
@@ -1764,6 +1808,9 @@ const ProductList: React.FC = () => {
               </View>
             </View>
           )}
+=======
+          ListHeaderComponent={renderHomeTabHeader}
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
           ListEmptyComponent={renderEmptyState}
         />
       )}
@@ -2153,6 +2200,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     borderRadius: 8,
   },
+<<<<<<< HEAD
   // Offer Cross Badge Styles
   offerCrossBadge: {
     position: 'absolute',
@@ -2180,6 +2228,8 @@ const styles = StyleSheet.create({
     width: 50,
     textAlign: 'center',
   },
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   discountBadge: {
     position: 'absolute',
     top: 8,
@@ -2188,7 +2238,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 10,
+<<<<<<< HEAD
     zIndex: 1,
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   },
   discountText: {
     fontSize: 10,
@@ -2281,17 +2334,25 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
+<<<<<<< HEAD
   // Updated Unit Modal Styles
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   unitModalContent: {
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
+<<<<<<< HEAD
     maxHeight: '70%',
+=======
+    maxHeight: '60%',
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   },
   unitModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+<<<<<<< HEAD
     alignItems: 'flex-start',
     marginBottom: 16,
   },
@@ -2328,6 +2389,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#95a5a6',
     textDecorationLine: 'line-through',
+=======
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  unitModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   },
   unitModalCloseBtn: {
     padding: 4,
@@ -2336,6 +2409,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#7f8c8d',
   },
+<<<<<<< HEAD
   modalDivider: {
     height: 1,
     backgroundColor: '#f0f0f0',
@@ -2344,6 +2418,11 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
+=======
+  productNameInModal: {
+    fontSize: 16,
+    fontWeight: '600',
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
     color: '#2c3e50',
     marginBottom: 16,
     textAlign: 'center',
@@ -2371,15 +2450,40 @@ const styles = StyleSheet.create({
   unitLeftSection: {
     flex: 1,
   },
+<<<<<<< HEAD
+=======
+  unitTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   unitText: {
     fontSize: 14,
     color: '#2c3e50',
     fontWeight: '500',
+<<<<<<< HEAD
+=======
+    marginRight: 8,
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   },
   selectedUnitText: {
     color: '#27ae60',
     fontWeight: '600',
   },
+<<<<<<< HEAD
+=======
+  unitDiscountBadge: {
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  unitDiscountText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   unitRightSection: {
     alignItems: 'flex-end',
   },
@@ -2401,6 +2505,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
+<<<<<<< HEAD
   unitDiscountBadge: {
     backgroundColor: '#e74c3c',
     paddingHorizontal: 8,
@@ -2445,6 +2550,23 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
+=======
+  unitSelectButton: {
+    fontSize: 12,
+    color: '#27ae60',
+    fontWeight: 'bold',
+  },
+  closeModalButton: {
+    backgroundColor: '#f0f0f0',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  closeModalButtonText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '600',
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
   },
   bottomNav: {
     flexDirection: 'row',
@@ -2588,6 +2710,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#7f8c8d',
   },
+<<<<<<< HEAD
   newUIStructure: {
     backgroundColor: '#ffffff',
     paddingBottom: 16,
@@ -2914,6 +3037,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
   },
+=======
+>>>>>>> 59b5a119e90d67880c7e91df3ad1810d608fbaad
 });
 
 export default ProductList;

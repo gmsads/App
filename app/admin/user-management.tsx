@@ -115,84 +115,6 @@ const mockUsers: User[] = [
     lastLogin: '2024-03-10',
     totalOrders: 2,
   },
-  // Add more users for testing pagination
-  {
-    id: 'USR009',
-    firstName: 'James',
-    lastName: 'Taylor',
-    email: 'james.t@example.com',
-    phone: '+1 123-456-7890',
-    status: 'Active',
-    registrationDate: '2024-03-08',
-    lastLogin: '2024-03-15',
-    totalOrders: 18,
-  },
-  {
-    id: 'USR010',
-    firstName: 'Linda',
-    lastName: 'Anderson',
-    email: 'linda.a@example.com',
-    phone: '+1 234-567-8901',
-    status: 'Active',
-    registrationDate: '2024-03-10',
-    lastLogin: '2024-03-14',
-    totalOrders: 9,
-  },
-  {
-    id: 'USR011',
-    firstName: 'Christopher',
-    lastName: 'Thomas',
-    email: 'chris.t@example.com',
-    phone: '+1 345-678-9012',
-    status: 'Inactive',
-    registrationDate: '2024-03-12',
-    lastLogin: '2024-03-13',
-    totalOrders: 4,
-  },
-  {
-    id: 'USR012',
-    firstName: 'Patricia',
-    lastName: 'Jackson',
-    email: 'patricia.j@example.com',
-    phone: '+1 456-789-0123',
-    status: 'Active',
-    registrationDate: '2024-03-14',
-    lastLogin: '2024-03-15',
-    totalOrders: 14,
-  },
-  {
-    id: 'USR013',
-    firstName: 'Richard',
-    lastName: 'White',
-    email: 'richard.w@example.com',
-    phone: '+1 567-890-1234',
-    status: 'Active',
-    registrationDate: '2024-03-16',
-    lastLogin: '2024-03-16',
-    totalOrders: 11,
-  },
-  {
-    id: 'USR014',
-    firstName: 'Jessica',
-    lastName: 'Harris',
-    email: 'jessica.h@example.com',
-    phone: '+1 678-901-2345',
-    status: 'Inactive',
-    registrationDate: '2024-03-18',
-    lastLogin: '2024-03-18',
-    totalOrders: 3,
-  },
-  {
-    id: 'USR015',
-    firstName: 'Charles',
-    lastName: 'Martin',
-    email: 'charles.m@example.com',
-    phone: '+1 789-012-3456',
-    status: 'Active',
-    registrationDate: '2024-03-20',
-    lastLogin: '2024-03-21',
-    totalOrders: 20,
-  },
 ];
 
 const UserManagement: React.FC = () => {
@@ -202,10 +124,6 @@ const UserManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'Active' | 'Inactive'>('all');
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [filteredUsers, setFilteredUsers] = useState<User[]>(mockUsers);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage, setUsersPerPage] = useState(5);
 
   // Filter users when search query or status filter changes
   useEffect(() => {
@@ -229,40 +147,13 @@ const UserManagement: React.FC = () => {
     }
 
     setFilteredUsers(result);
-    // Reset to page 1 when filters change
-    setCurrentPage(1);
   }, [users, searchQuery, statusFilter]);
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-
-  // Calculate user counts for filter buttons
-  const totalUsers = users.length;
-  const activeUsers = users.filter(user => user.status === 'Active').length;
-  const inactiveUsers = users.filter(user => user.status === 'Inactive').length;
-
-  // Handle page navigation
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
     // Simulate API call
     setTimeout(() => {
       setRefreshing(false);
-      setCurrentPage(1); // Reset to first page on refresh
     }, 1000);
   };
 
@@ -313,6 +204,11 @@ const UserManagement: React.FC = () => {
     });
   };
 
+  // Calculate statistics (removed totalRevenue calculation)
+  const totalUsers = users.length;
+  const activeUsers = users.filter(user => user.status === 'Active').length;
+  const inactiveUsers = users.filter(user => user.status === 'Inactive').length;
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -343,8 +239,38 @@ const UserManagement: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        {/* Stats Section */}
+        <Text style={styles.sectionTitle}>User Overview</Text>
+        
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.statsScroll}
+          contentContainerStyle={styles.statsScrollContent}
+        >
+          {/* Total Users Card */}
+          <View style={[styles.statCard, styles.totalCard]}>
+            <Text style={styles.statNumber}>{totalUsers}</Text>
+            <Text style={styles.statLabel}>Total Users</Text>
+          </View>
+          
+          {/* Active Users Card */}
+          <View style={[styles.statCard, styles.activeCard]}>
+            <Text style={styles.statNumber}>{activeUsers}</Text>
+            <Text style={styles.statLabel}>Active Users</Text>
+          </View>
+          
+          {/* Inactive Users Card */}
+          <View style={[styles.statCard, styles.inactiveCard]}>
+            <Text style={styles.statNumber}>{inactiveUsers}</Text>
+            <Text style={styles.statLabel}>Inactive Users</Text>
+          </View>
+        </ScrollView>
+
         {/* Search and Filter Section */}
         <View style={styles.searchFilterSection}>
+          <Text style={styles.sectionTitle}>All Users ({filteredUsers.length})</Text>
+          
           <View style={styles.searchContainer}>
             <View style={styles.searchInputContainer}>
               <Text style={styles.searchIcon}>🔍</Text>
@@ -358,7 +284,6 @@ const UserManagement: React.FC = () => {
             </View>
           </View>
 
-          {/* Filter buttons with counts */}
           <View style={styles.filterButtons}>
             <TouchableOpacity 
               style={[styles.filterButton, statusFilter === 'all' && styles.filterButtonActive]}
@@ -367,11 +292,6 @@ const UserManagement: React.FC = () => {
               <Text style={[styles.filterButtonText, statusFilter === 'all' && styles.filterButtonTextActive]}>
                 All
               </Text>
-              <View style={[styles.filterCountBadge, statusFilter === 'all' && styles.filterCountBadgeActive]}>
-                <Text style={[styles.filterCountText, statusFilter === 'all' && styles.filterCountTextActive]}>
-                  {totalUsers}
-                </Text>
-              </View>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -381,11 +301,6 @@ const UserManagement: React.FC = () => {
               <Text style={[styles.filterButtonText, statusFilter === 'Active' && styles.filterButtonTextActive]}>
                 Active
               </Text>
-              <View style={[styles.filterCountBadge, statusFilter === 'Active' && styles.filterCountBadgeActive]}>
-                <Text style={[styles.filterCountText, statusFilter === 'Active' && styles.filterCountTextActive]}>
-                  {activeUsers}
-                </Text>
-              </View>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -395,23 +310,13 @@ const UserManagement: React.FC = () => {
               <Text style={[styles.filterButtonText, statusFilter === 'Inactive' && styles.filterButtonTextActive]}>
                 Inactive
               </Text>
-              <View style={[styles.filterCountBadge, statusFilter === 'Inactive' && styles.filterCountBadgeActive]}>
-                <Text style={[styles.filterCountText, statusFilter === 'Inactive' && styles.filterCountTextActive]}>
-                  {inactiveUsers}
-                </Text>
-              </View>
             </TouchableOpacity>
           </View>
-
-          {/* User count */}
-          <Text style={styles.userCountText}>
-            Showing {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
-          </Text>
         </View>
 
         {/* Table Container */}
         <View style={styles.tableContainer}>
-          {currentUsers.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateIcon}>👥</Text>
               <Text style={styles.emptyStateTitle}>No users found</Text>
@@ -457,7 +362,7 @@ const UserManagement: React.FC = () => {
                 </View>
 
                 {/* Table Rows */}
-                {currentUsers.map((user, index) => (
+                {filteredUsers.map((user, index) => (
                   <View 
                     key={user.id} 
                     style={[
@@ -545,37 +450,6 @@ const UserManagement: React.FC = () => {
               </View>
             </ScrollView>
           )}
-
-          {/* Simple Pagination Controls - Only at bottom */}
-          {filteredUsers.length > usersPerPage && currentUsers.length > 0 && (
-            <View style={styles.paginationContainer}>
-              <Text style={styles.paginationText}>
-                Page {currentPage} of {totalPages}
-              </Text>
-              
-              <View style={styles.paginationButtons}>
-                <TouchableOpacity 
-                  style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
-                  onPress={handlePreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>
-                    ← Previous
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
-                  onPress={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  <Text style={[styles.paginationButtonText, currentPage === totalPages && styles.paginationButtonTextDisabled]}>
-                    Next →
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
         </View>
         
         {/* Bottom Padding */}
@@ -585,7 +459,7 @@ const UserManagement: React.FC = () => {
   );
 };
 
-// Updated Styles - Simple pagination at bottom only
+// Updated Styles (removed revenueCard style)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -633,13 +507,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   
-  searchFilterSection: {
-    marginBottom: 20,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 12,
     marginTop: 20,
   },
   
+  statsScroll: {
+    marginHorizontal: -16,
+  },
+  
+  statsScrollContent: {
+    paddingHorizontal: 16,
+  },
+  
+  statCard: {
+    width: 140,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  
+  totalCard: {
+    borderTopWidth: 4,
+    borderTopColor: '#3498db',
+  },
+  
+  activeCard: {
+    borderTopWidth: 4,
+    borderTopColor: '#27ae60',
+  },
+  
+  inactiveCard: {
+    borderTopWidth: 4,
+    borderTopColor: '#e74c3c',
+  },
+  
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  
+  statLabel: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  
+  searchFilterSection: {
+    marginBottom: 20,
+  },
+  
   searchContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   
   searchInputContainer: {
@@ -667,19 +597,15 @@ const styles = StyleSheet.create({
   filterButtons: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
   },
   
   filterButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     backgroundColor: '#ecf0f1',
     alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    position: 'relative',
   },
   
   filterButtonActive: {
@@ -694,38 +620,6 @@ const styles = StyleSheet.create({
   
   filterButtonTextActive: {
     color: '#fff',
-  },
-  
-  filterCountBadge: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 8,
-    minWidth: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  filterCountBadgeActive: {
-    backgroundColor: '#2c3e50',
-  },
-  
-  filterCountText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#7f8c8d',
-  },
-  
-  filterCountTextActive: {
-    color: '#fff',
-  },
-  
-  userCountText: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    textAlign: 'right',
-    fontWeight: '500',
   },
   
   tableContainer: {
@@ -743,7 +637,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     paddingVertical: 12,
-    minWidth: 1000,
+    minWidth: 1000, // Reduced from 1300
   },
   
   tableHeaderCell: {
@@ -760,7 +654,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  // Column widths
+  // Column widths (removed columnSpent)
   columnUserId: { width: 80 },
   columnName: { width: 120 },
   columnEmail: { width: 180 },
@@ -773,7 +667,7 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: 'row',
     minHeight: 60,
-    minWidth: 1000,
+    minWidth: 1000, // Reduced from 1300
   },
   
   tableRowEven: {
@@ -914,56 +808,6 @@ const styles = StyleSheet.create({
     color: '#95a5a6',
     textAlign: 'center',
     marginBottom: 20,
-  },
-  
-  // Simple Pagination Styles - Only at bottom
-  paginationContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  
-  paginationText: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    fontWeight: '500',
-  },
-  
-  paginationButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  
-  paginationButton: {
-    backgroundColor: '#3498db',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  
-  paginationButtonDisabled: {
-    backgroundColor: '#ecf0f1',
-  },
-  
-  paginationButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  
-  paginationButtonTextDisabled: {
-    color: '#95a5a6',
   },
   
   bottomPadding: {

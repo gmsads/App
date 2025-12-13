@@ -37,12 +37,12 @@ const ShopkeeperDashboard: React.FC = () => {
   const [shopData, setShopData] = useState<ShopData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [ordersCount, setOrdersCount] = useState({
-    pending: 7,
-    today: 7,
-    thisWeek: 7,
+    pending: 5,
+    today: 12,
+    thisWeek: 45,
     thisMonth: 180,
   });
-  const [productsCount, setProductsCount] = useState(1);
+  const [productsCount, setProductsCount] = useState(28);
 
   useEffect(() => {
     loadShopData();
@@ -69,6 +69,10 @@ const ShopkeeperDashboard: React.FC = () => {
       thisWeek: 7,
       thisMonth: 180,
     });
+    // Simulate API calls
+    setTimeout(() => {
+      setProductsCount(32);
+    }, 500);
   };
 
   const onRefresh = () => {
@@ -117,6 +121,12 @@ const ShopkeeperDashboard: React.FC = () => {
       screen: '/shopkeeper/products/add-product',
     },
     {
+      title: 'Edit List',
+      icon: 'edit' as const,
+      color: '#FF9800',
+      screen: '/shopkeeper/my-list/my-list',
+    },
+    {
       title: 'Pending Orders',
       icon: 'pending-actions' as const,
       color: '#FF9800',
@@ -127,12 +137,6 @@ const ShopkeeperDashboard: React.FC = () => {
       icon: 'today' as const,
       color: '#2196F3',
       screen: '/shopkeeper/orders/todays-orders', // Direct to Today's Orders only
-    },
-    {
-      title: 'Weekly Orders',
-      icon: 'date-range' as const,
-      color: '#9C27B0',
-      screen: '/shopkeeper/orders/weekly-orders', // New Weekly Orders screen
     },
   ];
 
@@ -225,11 +229,14 @@ const ShopkeeperDashboard: React.FC = () => {
             <View style={styles.metricCard}>
               <FontAwesome5 name="rupee-sign" size={20} color="#2196F3" />
               <Text style={styles.metricValue}>₹682</Text>
+
+              <Text style={styles.metricValue}>₹{ordersCount.thisWeek * 250}</Text>
+
               <Text style={styles.metricLabel}>Weekly Revenue</Text>
             </View>
             <View style={styles.metricCard}>
               <Feather name="users" size={20} color="#FF9800" />
-              <Text style={styles.metricValue}>0</Text>
+              <Text style={styles.metricValue}>42</Text>
               <Text style={styles.metricLabel}>Active Customers</Text>
             </View>
             <View style={styles.metricCard}>
@@ -313,7 +320,8 @@ const styles = StyleSheet.create({
   },
   quickAction: {
     alignItems: 'center',
-    width: '48%',
+
+    width: '48%', // Changed from '31%' to '48%' for 2 columns (2x2 grid)
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
